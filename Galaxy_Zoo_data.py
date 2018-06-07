@@ -31,6 +31,6 @@ cd ~/Documents/GitHub/Infinity_Categorizer
 # In[11]:
 
 
-for i in range(2):#np.size(data.OBJID)):
+for i in range(n):#np.size(data.OBJID)):
     urllib.request.urlretrieve('http://skyserver.sdss.org/dr14/SkyServerWS/ImgCutout/getjpeg?TaskName=Skyserver.Explore.Image&ra={0}&dec={1}&scale=.2&width=200&height=200'.format(data.RA[i], data.DEC[i]),'Img_{0}_{1}.jpeg'.format(i,data.OBJID[i]))
 
