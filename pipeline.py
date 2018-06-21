@@ -35,7 +35,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 
 
-def read_images(filename_queue):
+def read_image(galObj):
     """
     Reads and parses examples from image data files. Expects data in the form
     of rgb images of any extension.
@@ -66,20 +66,14 @@ def read_images(filename_queue):
     result.height = 200
     result.width = 200
     result.depth = 3
+    result.key = galObj.OBJID
     image_bytes = result.height * result.width * result.depth
     # Every record consists of a label followed by the image, with a
     # fixed number of bytes for each.
     record_bytes = label_bytes + image_bytes
 
-    # Read a record, getting filenames from the filename_queue.  No
-    # header or footer in the CIFAR-10 format, so we leave header_bytes
-    # and footer_bytes at their default of 0.
-    im = imageio.imread(filename_queue)
-    reader = tf.FixedLengthRecordReader(record_bytes=record_bytes)
-    result.key, value = reader.read(filename_queue)
-
-    # Convert from a string to a vector of uint8 that is record_bytes long.
-    record_bytes = tf.decode_raw(value, tf.uint8)
+    # Get image data for for object with ID objID
+    result.uint8image = imageio.imread('Img_{0}.jpeg'.format(result.key))
 
     # The first bytes represent the label, which we convert from uint8->int32.
     result.label = tf.cast(
@@ -87,12 +81,12 @@ def read_images(filename_queue):
 
     # The remaining bytes after the label represent the image, which we reshape
     # from [depth * height * width] to [depth, height, width].
-    depth_major = tf.reshape(
-            tf.strided_slice(record_bytes, [label_bytes],
-                             [label_bytes + image_bytes]),
-            [result.depth, result.height, result.width])
+#    depth_major = tf.reshape(
+#            tf.strided_slice(record_bytes, [label_bytes],
+#                             [label_bytes + image_bytes]),
+#            [result.depth, result.height, result.width])
     # Convert from [depth, height, width] to [height, width, depth].
-    result.uint8image = tf.transpose(depth_major, [1, 2, 0])
+#    result.uint8image = tf.transpose(depth_major, [1, 2, 0])
 
     return result
 
