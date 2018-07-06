@@ -10,10 +10,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import pandas as pd
+
 import imageio
 
-from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
 
 # =============================================================================
@@ -35,7 +35,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 
 
-def read_image(galObj):
+def get_image(galObj):
     """
     Reads and parses examples from image data files. Expects data in the form
     of rgb images of any extension.
@@ -46,89 +46,23 @@ def read_image(galObj):
     Args:
         filename_queue: A queue of strings with the filenames to read from.
     Returns:
-        An object representing a single example, with the following fields:
-            height: number of rows in the result (200)
-            width: number of columns in the result (200)
-            depth: number of color channels in the result (3)
-            key: a scalar string Tensor describing the filename & record number
-                for this example.
-            label: an int32 Tensor with the label in the range 0..9.
-            uint8image: a [height, width, depth] uint8 Tensor with the image
-                data
+        image: a [height, width, depth] uint8 Tensor with the image data
+        label: an int32 Tensor with the label in the range 0..9.
     """
-
-    class ImageRecord(object):
-        pass
-    result = ImageRecord()
-
-    # Dimensions of the images in galaxy dataset
-    label_bytes = 1
-    result.height = 200
-    result.width = 200
-    result.depth = 3
-    result.key = galObj.OBJID
-    image_bytes = result.height * result.width * result.depth
-    # Every record consists of a label followed by the image, with a
-    # fixed number of bytes for each.
-    record_bytes = label_bytes + image_bytes
 
     # Get image data for for object with ID objID
-    result.uint8image = imageio.imread('Img_{0}.jpeg'.format(result.key))
+    image = imageio.imread('http://skyserver.sdss.org/dr14/SkyServerWS/'
+                           'ImgCutout/getjpeg?TaskName=Skyserver.Explore.Image'
+                           '&ra={0}'
+                           '&dec={1}'
+                           '&scale=.2'
+                           '&width=200'
+                           '&height=200'.format(galObj.RA, galObj.DEC))
 
-    # The first bytes represent the label, which we convert from uint8->int32.
-    result.label = tf.cast(
-            tf.strided_slice(record_bytes, [0], [label_bytes]), tf.int32)
-
-    # The remaining bytes after the label represent the image, which we reshape
-    # from [depth * height * width] to [depth, height, width].
-#    depth_major = tf.reshape(
-#            tf.strided_slice(record_bytes, [label_bytes],
-#                             [label_bytes + image_bytes]),
-#            [result.depth, result.height, result.width])
-    # Convert from [depth, height, width] to [height, width, depth].
-#    result.uint8image = tf.transpose(depth_major, [1, 2, 0])
-
-    return result
+    return image, label
 
 
-def _generate_image_and_label_batch(image, label, min_queue_examples,
-                                    batch_size, shuffle):
-    """Construct a queued batch of images and labels.
-    Args:
-        image: 3-D Tensor of [height, width, 3] of type.float32.
-        label: 1-D Tensor of type.int32
-        min_queue_examples: int32, minimum number of samples to retain
-            in the queue that provides of batches of examples.
-        batch_size: Number of images per batch.
-        shuffle: boolean indicating whether to use a shuffling queue.
-    Returns:
-        images: Images. 4D tensor of [batch_size, height, width, 3] size.
-        labels: Labels. 1D tensor of [batch_size] size.
-    """
-    # Create a queue that shuffles the examples, and then
-    # read 'batch_size' images + labels from the example queue.
-    num_preprocess_threads = 16
-    if shuffle:
-        images, label_batch = tf.train.shuffle_batch(
-                [image, label],
-                batch_size=batch_size,
-                num_threads=num_preprocess_threads,
-                capacity=min_queue_examples + 3 * batch_size,
-                min_after_dequeue=min_queue_examples)
-    else:
-        images, label_batch = tf.train.batch(
-                [image, label],
-                batch_size=batch_size,
-                num_threads=num_preprocess_threads,
-                capacity=min_queue_examples + 3 * batch_size)
-
-    # Display the training images in the visualizer.
-    tf.summary.image('images', images)
-
-    return images, tf.reshape(label_batch, [batch_size])
-
-
-def distorted_inputs(data_dir, batch_size):
+def distorted_inputs(galObj):
     """Construct distorted input for CIFAR training using the Reader ops.
     Args:
         data_dir: Path to the CIFAR-10 data directory.
@@ -137,57 +71,26 @@ def distorted_inputs(data_dir, batch_size):
         images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3]
         size.
         labels: Labels. 1D tensor of [batch_size] size.
-        """
-    filenames = [os.path.join(data_dir, 'data_batch_%d.bin' % i)
-                 for i in xrange(1, 6)]
-    for f in filenames:
-        if not tf.gfile.Exists(f):
-            raise ValueError('Failed to find file: ' + f)
+    """
+    image, label = get_image(galObj)
 
-    # Create a queue that produces the filenames to read.
-    filename_queue = tf.train.string_input_producer(filenames)
-
-    with tf.name_scope('data_augmentation'):
-        # Read examples from files in the filename queue.
-        read_input = read_images(filename_queue)
-        reshaped_image = tf.cast(read_input.uint8image, tf.float32)
-
-    height = IMAGE_SIZE
-    width = IMAGE_SIZE
-
-    # Image processing for training the network. Note the many random
-    # distortions applied to the image.
-
-    # Randomly crop a [height, width] section of the image.
-    distorted_image = tf.random_crop(reshaped_image, [height, width, 3])
+    # From here is where we can start to apply distortions. We should first
+    # do some research on what distortions may be appropriate (though flipping
+    # seems reasonable)
 
     # Randomly flip the image horizontally.
-    distorted_image = tf.image.random_flip_left_right(distorted_image)
-
-    # Because these operations are not commutative, consider randomizing
-    # the order their operation.
-    # NOTE: since per_image_standardization zeros the mean and makes
-    # the stddev unit, this likely has no effect see tensorflow#1458.
-    distorted_image = tf.image.random_brightness(distorted_image,
-                                                 max_delta=63)
-    distorted_image = tf.image.random_contrast(distorted_image,
-                                               lower=0.2, upper=1.8)
-
-    # Subtract off the mean and divide by the variance of the pixels.
-    float_image = tf.image.per_image_standardization(distorted_image)
-
-    # Set the shapes of tensors.
-    float_image.set_shape([height, width, 3])
-    read_input.label.set_shape([1])
-
-    # Ensure that the random shuffling has good mixing properties.
-    min_fraction_of_examples_in_queue = 0.4
-    min_queue_examples = int(NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN *
-                             min_fraction_of_examples_in_queue)
-    print ('Filling queue with %d CIFAR images before starting to train. '
-           'This will take a few minutes.' % min_queue_examples)
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
+#
+#    # Because these operations are not commutative, consider randomizing
+#    # the order their operation.
+#    # NOTE: since per_image_standardization zeros the mean and makes
+#    # the stddev unit, this likely has no effect see tensorflow#1458.
+#    distorted_image = tf.image.random_brightness(distorted_image,
+#                                                 max_delta=63)
+#    distorted_image = tf.image.random_contrast(distorted_image,
+#                                               lower=0.2, upper=1.8)
 
     # Generate a batch of images and labels by building up a queue of examples.
-    return _generate_image_and_label_batch(float_image, read_input.label,
-                                           min_queue_examples, batch_size,
-                                           shuffle=True)
+    return image, label
+
