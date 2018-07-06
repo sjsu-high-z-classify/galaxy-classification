@@ -10,8 +10,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import pandas as pd
-
 import imageio
 
 import tensorflow as tf
@@ -34,8 +32,11 @@ NUM_CLASSES = 10
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 
+# {x: x**2 for x in (2, 4, 6)} # potential auto population of type dict later
+galDict = {'S': 0, 'E': 1, 'U': 2}
 
-def get_image(galObj):
+
+def get_image(ra, dec, galType):
     """
     Reads and parses examples from image data files. Expects data in the form
     of rgb images of any extension.
@@ -51,18 +52,21 @@ def get_image(galObj):
     """
 
     # Get image data for for object with ID objID
+    print(ra, dec)
     image = imageio.imread('http://skyserver.sdss.org/dr14/SkyServerWS/'
                            'ImgCutout/getjpeg?TaskName=Skyserver.Explore.Image'
                            '&ra={0}'
                            '&dec={1}'
                            '&scale=.2'
                            '&width=200'
-                           '&height=200'.format(galObj.RA, galObj.DEC))
+                           '&height=200'.format(ra, dec))
+
+    label = galDict[galType]
 
     return image, label
 
 
-def distorted_inputs(galObj):
+def distorted_inputs(ra, dec, galType):
     """Construct distorted input for CIFAR training using the Reader ops.
     Args:
         data_dir: Path to the CIFAR-10 data directory.
@@ -72,15 +76,15 @@ def distorted_inputs(galObj):
         size.
         labels: Labels. 1D tensor of [batch_size] size.
     """
-    image, label = get_image(galObj)
+    image, label = get_image(ra, dec, galType)
 
     # From here is where we can start to apply distortions. We should first
     # do some research on what distortions may be appropriate (though flipping
     # seems reasonable)
 
     # Randomly flip the image horizontally.
-    image = tf.image.random_flip_left_right(image)
-    image = tf.image.random_flip_up_down(image)
+#    image = tf.image.random_flip_left_right(image)
+#    image = tf.image.random_flip_up_down(image)
 #
 #    # Because these operations are not commutative, consider randomizing
 #    # the order their operation.
@@ -91,6 +95,5 @@ def distorted_inputs(galObj):
 #    distorted_image = tf.image.random_contrast(distorted_image,
 #                                               lower=0.2, upper=1.8)
 
-    # Generate a batch of images and labels by building up a queue of examples.
     return image, label
 

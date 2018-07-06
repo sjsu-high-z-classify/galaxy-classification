@@ -6,16 +6,27 @@ Created on Fri Jul  6 11:52:11 2018
 @author: jacaseyclyde
 """
 
-galData = pd.read_csv('Book.csv')
-galData = pd.DataFrame(galData)
-    
-# A vector of filenames.
-filenames = tf.constant(["/var/data/image1.jpg", "/var/data/image2.jpg", ...])
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-# `labels[i]` is the label for the image in `filenames[i].
-labels = tf.constant([0, 37, ...])
+import pipeline
 
-dataset = tf.data.Dataset.from_tensor_slices((galData.RA,
-                                              galData.DEC,
-                                              galData.TYPE))
-dataset = dataset.map(distorted_inputs)
+import pandas as pd
+import tensorflow as tf
+
+
+def main():
+    galData = pd.read_csv('Book.csv')
+    galData = pd.DataFrame(galData)
+
+    dataset = tf.data.Dataset.from_tensor_slices((galData.RA.tolist(),
+                                                  galData.DEC.tolist(),
+                                                  galData.TYPE.tolist()))
+    dataset = dataset.map(pipeline.distorted_inputs)
+
+    return dataset
+
+
+if __name__ == '__main__':
+    dataset = main()
