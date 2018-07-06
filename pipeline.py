@@ -12,8 +12,6 @@ from __future__ import print_function
 
 import imageio
 
-import tensorflow as tf
-
 # =============================================================================
 # constants
 # =============================================================================
@@ -52,16 +50,15 @@ def get_image(ra, dec, galType):
     """
 
     # Get image data for for object with ID objID
-    print(ra, dec)
     image = imageio.imread('http://skyserver.sdss.org/dr14/SkyServerWS/'
                            'ImgCutout/getjpeg?TaskName=Skyserver.Explore.Image'
                            '&ra={0}'
                            '&dec={1}'
                            '&scale=.2'
                            '&width=200'
-                           '&height=200'.format(ra, dec))
+                           '&height=200'.format(ra.decode(), dec.decode()))
 
-    label = galDict[galType]
+    label = galDict[galType.decode()]
 
     return image, label
 
@@ -96,4 +93,3 @@ def distorted_inputs(ra, dec, galType):
 #                                               lower=0.2, upper=1.8)
 
     return image, label
-

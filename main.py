@@ -23,10 +23,27 @@ def main():
     dataset = tf.data.Dataset.from_tensor_slices((galData.RA.tolist(),
                                                   galData.DEC.tolist(),
                                                   galData.TYPE.tolist()))
-    dataset = dataset.map(pipeline.distorted_inputs)
+
+    dataset = dataset.map(
+            lambda ra, dec, galType: tuple(
+                    tf.py_func(pipeline.distorted_inputs,
+                               [ra, dec, galType],
+                               [tf.uint8, tf.int64])))
 
     return dataset
 
 
 if __name__ == '__main__':
     dataset = main()
+
+    iterator = dataset.make_one_shot_iterator()
+
+    features, labels = iterator.get_next()
+
+    sess = tf.Session()
+
+    with sess.as_default():
+        f_res = features.eval()
+        l_res = labels.eval()
+
+        print(f_res.shape, l_res)
