@@ -104,3 +104,4 @@ venv.bak/
 .mypy_cache/
 *.ipynb
 .DS_Store
+data_GZ1.csv
