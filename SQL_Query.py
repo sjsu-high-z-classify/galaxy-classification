@@ -1,23 +1,26 @@
 
 # coding: utf-8
 
-# In[10]:
+# In[1]:
 
 
+import pandas as pd
+import numpy as np
 import mechanicalsoup  as ms
+import time
 
 
-# In[11]:
+# In[2]:
 
 
 url = "http://skyserver.sdss.org/dr14/en/tools/search/sql.aspx"
 br = ms.StatefulBrowser()
 
 
-# In[12]:
+# In[3]:
 
 
-def SDSS_select(sql):    
+def SDSS_select(sql):
     '''
     input:  string with a valid SQL query
     output: csv
@@ -30,40 +33,39 @@ def SDSS_select(sql):
     response = br.submit_selected()
     return response.text
     
-def writer(name, data):
+def writer(filename, data):
     # writes data to a file
-    f = open(name, 'w')
+    f = open(filename, 'w')
     f.write(data)
     f.close()
     return writer
 
+def database(n):
+    s = "SELECT TOP {}         specobjid, objid as objid8, ra, dec,         spiral, elliptical, uncertain     FROM ZooSpec".format(n)
 
-# In[13]:
+    SDSS = SDSS_select(s)
+    writer('data_GZ1.csv', SDSS)
+    
+    data = pd.read_csv('data_GZ1.csv',header = 1)
+    data = pd.DataFrame(data)
+    
+    data['Gtype'] = ''
+    
+    for i in range(np.size(data.specobjid)):
+        if data.spiral[i] == 1:
+            data.loc[i,'Gtype'] = 'S'
+        elif data.elliptical[i] == 1:
+            data.loc[i,'Gtype'] = 'E'
+        elif data.uncertain[i] == 1:
+            data.loc[i,'Gtype'] = 'UN'
+            
+    data = data.drop(columns=['spiral', 'elliptical','uncertain'])
+    data.to_csv('Skyserver_SQL_{}.csv'.format(time.strftime("%Y-%m-%d_%H_%M_%S")))
+    return database
 
 
-# this one uses table GALAXY ZOO 1 from SDSS DR14
-n = 10000
-s = "SELECT TOP {}         specobjid, objid as objid8, ra, dec,         spiral, elliptical, uncertain     FROM ZooSpec".format(n)
-
-# print(s)
-
-SDSS = SDSS_select(s)
-
-# print(SDSS)
-filename = 'data_GZ1.csv'
-writer(filename, SDSS)
+# In[8]:
 
 
-# In[14]:
-
-
-# n = 10000
-# s = "SELECT TOP {}         specobjid, dr8objid, ra, dec, t01_smooth_or_features_a01_smooth_flag,         t01_smooth_or_features_a02_features_or_disk_flag, t01_smooth_or_features_a03_star_or_artifact_flag,         t02_edgeon_a04_yes_flag, t02_edgeon_a05_no_flag, t03_bar_a06_bar_flag, t03_bar_a07_no_bar_flag,         t04_spiral_a08_spiral_flag, t04_spiral_a09_no_spiral_flag, t05_bulge_prominence_a10_no_bulge_flag,         t05_bulge_prominence_a11_just_noticeable_flag, t05_bulge_prominence_a12_obvious_flag,         t05_bulge_prominence_a13_dominant_flag, t06_odd_a14_yes_flag, t06_odd_a15_no_flag,         t07_rounded_a16_completely_round_flag, t07_rounded_a17_in_between_flag, t07_rounded_a18_cigar_shaped_flag,         t08_odd_feature_a19_ring_flag, t08_odd_feature_a20_lens_or_arc_flag, t08_odd_feature_a21_disturbed_flag,         t08_odd_feature_a22_irregular_flag, t08_odd_feature_a23_other_flag, t08_odd_feature_a24_merger_flag,         t08_odd_feature_a38_dust_lane_flag, t09_bulge_shape_a25_rounded_flag, t09_bulge_shape_a26_boxy_flag,          t09_bulge_shape_a27_no_bulge_flag, t10_arms_winding_a28_tight_flag, t10_arms_winding_a29_medium_flag,         t10_arms_winding_a30_loose_flag, t11_arms_number_a31_1_flag, t11_arms_number_a32_2_flag,         t11_arms_number_a33_3_flag, t11_arms_number_a34_4_flag, t11_arms_number_a36_more_than_4_flag,         t11_arms_number_a37_cant_tell_flag     FROM zoo2MainSpecz".format(n)
-# print(s)
-
-# SDSS = SDSS_select(s)
-
-# print(SDSS)
-# filename = 'data_GZ2.csv'
-# writer(filename, SDSS)
+database(1000)
 
