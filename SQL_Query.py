@@ -14,8 +14,8 @@ import time
 # In[2]:
 
 
-Authentication_loginName = 'hiren'
-Authentication_loginPassword = 'Asdfg@123'
+Authentication_loginName = '***'
+Authentication_loginPassword = '***'
 token = Authentication.login(Authentication_loginName, Authentication_loginPassword)
 
 
