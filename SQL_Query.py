@@ -1,8 +1,4 @@
-
-# coding: utf-8
-
 # In[1]:
-
 
 import pandas as pd
 import numpy as np
@@ -10,17 +6,13 @@ import mechanicalsoup  as ms
 from SciServer import Authentication, CasJobs
 import time
 
-
 # In[2]:
-
 
 Authentication_loginName = 'hiren'
 Authentication_loginPassword = 'Asdfg@123'
 token = Authentication.login(Authentication_loginName, Authentication_loginPassword)
 
-
 # In[3]:
-
 
 def database(n):
     query = "SELECT TOP {} specobjid, objid as objid8, ra, dec, spiral, elliptical, uncertain FROM ZooSpec".format(n)
@@ -42,9 +34,6 @@ def database(n):
     data.to_csv('Skyserver_SQL_{}.csv'.format(time.strftime("%Y-%m-%d_%H_%M_%S")))
     return database
 
-
 # In[4]:
 
-
 database(1000)
-
