@@ -6,21 +6,19 @@ Created on Sun Jun 17 18:26:40 2018
 @author: papi
 """
 
-#Importing libraries
+# Importing libraries
 import numpy as np
 import tensorflow as tf
-import pandas as pd
 from scipy import misc
-import matplotlib as plt
 import os
-#import pandas as pd
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
 tensor_list_ellipse = []
 tensor_list_ellipse_test = []
 tensor_list_spiral = []
-#Path to the directory of galaxy images
+
+# Path to the directory of galaxy images
 elliptical_path = '/Users/papi/tensorflow-for-poets-2/tf_files/otherdata/100w/Elliptical/train_elliptical'
 elliptical_path_test = '/Users/papi/tensorflow-for-poets-2/tf_files/otherdata/100w/Elliptical/test_elliptical'
 spiral_path = '/Users/papi/tensorflow-for-poets-2/tf_files/otherdata/100w/Spiral'
@@ -39,48 +37,40 @@ ellipse_train_labels = np.array([0]*len(tensor_train_ellipse))
 tensor_test_ellipse = np.array(tensor_list_ellipse)*1.00
 ellipse_test_labels = np.array([0]*len(tensor_test_ellipse))
 
-#for file in os.listdir(spiral_path):
-#    tensor2 = misc.imread(os.path.join(spiral_path, file))
-#    tensor_list_spiral.append(tensor2)
-#
-#tensor_train_spiral = np.array(tensor_list_spiral)
-#spiral_train_labels = np.array([1]*len(tensor_train_spiral))
-
-
 
 def cnn_model(features, labels, mode):
     """CNN model function"""
-    
-    #Input layer
-    input_layer = tf.reshape(features['x'], [-1, 200, 200 , 3])
-    
-    #Convolution layer 1
-    conv1 = tf.layers.conv2d(
-            inputs = input_layer,
-            filters = 32,
-            kernel_size = 25,
-            padding = 'same',
-            activation= tf.nn.relu)
-    
-    #Max Pool layer 1
-    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size= 2, strides=2)
-    
-    #Convolution layer 2
-    conv2 = tf.layers.conv2d(
-            inputs = pool1,
-            filters= 64,
-            kernel_size= 25,
-            padding='same',
-            activation= tf.nn.relu)
-    
-    #Max pool layer 2
-    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size= 2, strides=2)
-    
-    #Dense layer
-    pool2_flat = tf.reshape(pool2, [-1,50*50*64])
-    dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation= tf.nn.relu)
-    dropout = tf.layers.dropout(
-            inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+    # Input layer
+    input_layer = tf.reshape(features['x'], [-1, 200, 200, 3])
+
+    # Convolution layer 1
+    conv1 = tf.layers.conv2d(inputs=input_layer,
+                             filters=32,
+                             kernel_size=25,
+                             padding='same',
+                             activation=tf.nn.relu)
+
+    # Max Pool layer 1
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=2, strides=2)
+
+    # Convolution layer 2
+    conv2 = tf.layers.conv2d(inputs=pool1,
+                             filters=64,
+                             kernel_size=25,
+                             padding='same',
+                             activation=tf.nn.relu)
+
+    # Max pool layer 2
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=2, strides=2)
+
+    # Dense layer
+    pool2_flat = tf.reshape(pool2, [-1, 50*50*64])
+    dense = tf.layers.dense(inputs=pool2_flat,
+                            units=1024,
+                            activation=tf.nn.relu)
+    dropout = tf.layers.dropout(inputs=dense,
+                                rate=0.4,
+                                training=mode == tf.estimator.ModeKeys.TRAIN)
     
     #Logits Layer
     logits = tf.layers.dense(inputs = dropout, units= 2)

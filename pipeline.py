@@ -12,6 +12,8 @@ from __future__ import print_function
 
 import imageio
 
+import tensorflow as tf
+
 # =============================================================================
 # constants
 # =============================================================================
@@ -31,7 +33,7 @@ NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 
 # {x: x**2 for x in (2, 4, 6)} # potential auto population of type dict later
-galDict = {'S': 0, 'E': 1, 'U': 2}
+gal_dict = {'S': 0, 'E': 1, 'U': 2}
 
 
 def get_image(ra, dec, galType):
@@ -58,7 +60,7 @@ def get_image(ra, dec, galType):
                            '&width=200'
                            '&height=200'.format(ra.decode(), dec.decode()))
 
-    label = galDict[galType.decode()]
+    label = gal_dict[galType.decode()]
 
     return image, label
 
@@ -92,4 +94,20 @@ def distorted_inputs(ra, dec, galType):
 #    distorted_image = tf.image.random_contrast(distorted_image,
 #                                               lower=0.2, upper=1.8)
 
-    return image, label
+    return {'Image': image}, {'label': label}
+
+
+def train_input_fn(gal_data, batch_size):
+    dataset = tf.data.Dataset.from_tensor_slices((gal_data.RA.tolist(),
+                                                  gal_data.DEC.tolist(),
+                                                  gal_data.TYPE.tolist()))
+
+    dataset = dataset.map(
+            lambda ra, dec, galType: tuple(
+                    tf.py_func(distorted_inputs,
+                               [ra, dec, galType],
+                               [tf.uint8, tf.int64])))
+
+    dataset = dataset.shuffle(1000).repeat().batch(batch_size)
+
+    return dataset
