@@ -16,9 +16,9 @@ tf.logging.set_verbosity(tf.logging.INFO)
 def cnn_model(features, labels, mode, params):
     """CNN model function"""
     # Input layer
-#    input_layer = tf.reshape(features['x'], [-1, 200, 200, 3])
-    input_layer = tf.feature_column.input_layer(
-            features, params['feature_columns'])
+    input_layer = tf.reshape(features['Image'], [-1, 200, 200, 3])
+#    input_layer = tf.feature_column.input_layer(
+#            features, params['feature_columns'])
 
     # Convolution layer 1
     conv1 = tf.layers.conv2d(inputs=input_layer,
