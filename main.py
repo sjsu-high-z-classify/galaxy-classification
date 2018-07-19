@@ -41,7 +41,7 @@ def main():
 
     classifier.train(
             input_fn=lambda: pipeline.train_input_fn(gal_data, batch_size),
-            steps=300,
+            steps=4,
             hooks=[logging_hook])
 
     return classifier

@@ -12,6 +12,8 @@ from __future__ import print_function
 
 import imageio
 
+import numpy as np
+
 import tensorflow as tf
 
 # =============================================================================
@@ -36,16 +38,13 @@ NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
 gal_dict = {'S': 0, 'E': 1, 'U': 2}
 
 
-def get_image(ra, dec, galType):
+def get_image(ra, dec, gal_type):
     """
-    Reads and parses examples from image data files. Expects data in the form
-    of rgb images of any extension.
-    Recommendation: if you want N-way read parallelism, call this function
-    N times.  This will give you N independent Readers reading different
-    files & positions within those files, which will give better mixing of
-    examples.
+    Fetches images from SDSS and converts galaxy type to a numeric class
     Args:
-        filename_queue: A queue of strings with the filenames to read from.
+        ra: galaxy right ascension
+        dec: galaxy declination
+        gal_type: type of galaxy, as determined by galaxy zoo
     Returns:
         image: a [height, width, depth] uint8 Tensor with the image data
         label: an int32 Tensor with the label in the range 0..9.
@@ -59,13 +58,15 @@ def get_image(ra, dec, galType):
                            '&scale=.2'
                            '&width=200'
                            '&height=200'.format(ra.decode(), dec.decode()))
+    
+    image = image.astype(np.float32)
 
-    label = gal_dict[galType.decode()]
+    label = gal_dict[gal_type.decode()]
 
     return image, label
 
 
-def distorted_inputs(ra, dec, galType):
+def distorted_inputs(image, label):
     """Construct distorted input for CIFAR training using the Reader ops.
     Args:
         data_dir: Path to the CIFAR-10 data directory.
@@ -75,26 +76,14 @@ def distorted_inputs(ra, dec, galType):
         size.
         labels: Labels. 1D tensor of [batch_size] size.
     """
-    image, label = get_image(ra, dec, galType)
-
-    # From here is where we can start to apply distortions. We should first
-    # do some research on what distortions may be appropriate (though flipping
-    # seems reasonable)
 
     # Randomly flip the image horizontally.
-#    image = tf.image.random_flip_left_right(image)
-#    image = tf.image.random_flip_up_down(image)
-#
-#    # Because these operations are not commutative, consider randomizing
-#    # the order their operation.
-#    # NOTE: since per_image_standardization zeros the mean and makes
-#    # the stddev unit, this likely has no effect see tensorflow#1458.
-#    distorted_image = tf.image.random_brightness(distorted_image,
-#                                                 max_delta=63)
-#    distorted_image = tf.image.random_contrast(distorted_image,
-#                                               lower=0.2, upper=1.8)
+    image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_up_down(image)
 
-    return {'Image': image}, {'label': label}
+    # return images in a dict. this can be useful if we need to pass other data
+    # as well
+    return {'Image': image}, label
 
 
 def train_input_fn(gal_data, batch_size):
@@ -104,10 +93,13 @@ def train_input_fn(gal_data, batch_size):
 
     dataset = dataset.map(
             lambda ra, dec, galType: tuple(
-                    tf.py_func(distorted_inputs,
+                    tf.py_func(get_image,
                                [ra, dec, galType],
-                               [tf.uint8, tf.int64])))
+                               [tf.float32, tf.int64])))
+    
+    dataset = dataset.map(distorted_inputs)
 
     dataset = dataset.shuffle(1000).repeat().batch(batch_size)
 
-    return dataset
+    return dataset.make_one_shot_iterator().get_next()
+

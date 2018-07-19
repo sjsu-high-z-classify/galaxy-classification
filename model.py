@@ -10,12 +10,13 @@ Created on Sun Jun 17 18:26:40 2018
 import tensorflow as tf
 
 
-tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
 def cnn_model(features, labels, mode, params):
     """CNN model function"""
     # Input layer
+#    input_layer = features['Image']
     input_layer = tf.reshape(features['Image'], [-1, 200, 200, 3])
 #    input_layer = tf.feature_column.input_layer(
 #            features, params['feature_columns'])
