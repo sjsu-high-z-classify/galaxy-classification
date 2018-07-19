@@ -13,6 +13,7 @@ from __future__ import print_function
 import pipeline
 import model
 
+import numpy as np
 import pandas as pd
 
 import tensorflow as tf
@@ -31,7 +32,9 @@ def main():
     classifier = tf.estimator.Estimator(
             model_fn=model.cnn_model,
             params={
-                    'feature_columns': my_feature_columns
+                    # number of classes is the number of unique labels
+                    'n_classes': len(np.unique(gal_data.TYPE)),
+                    # 'feature_columns': my_feature_columns
                     })
 
     # Set up logging for predictions

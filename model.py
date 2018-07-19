@@ -53,7 +53,7 @@ def cnn_model(features, labels, mode, params):
                                 training=mode == tf.estimator.ModeKeys.TRAIN)
 
     # Logits Layer
-    logits = tf.layers.dense(inputs=dropout, units=2)
+    logits = tf.layers.dense(inputs=dropout, units=params['n_classes'])
 
     predictions = {
             # Generate predictons (for PREDICT and EVAL mode)
