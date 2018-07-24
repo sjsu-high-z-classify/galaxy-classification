@@ -26,13 +26,14 @@ import argparse
 import numpy as np
 import pandas as pd
 
+from sklearn.model_selection import train_test_split
+
 import tensorflow as tf
 
 import pipeline
 import model
 import database
 
-BATCH_SIZE = 100
 RECORDS = 10
 
 
@@ -53,30 +54,36 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Add command line flags
-    parser.add_argument('-u', '--username', dest='username', help="User name")
-    parser.add_argument('-p', '--password', dest='password', help="Password")
-    
+    parser.add_argument('-u', '--username', dest='USERNAME', help='User name')
+    parser.add_argument('-p', '--password', dest='PASSWORD', help='Password')
+    parser.add_argument('-B', '--batch_size', dest='BATCH_SIZE',
+                        help='Batch Size', default=100)
+
     args = parser.parse_args()
 
     # Open the catalogue, or create and open the catalogue if necessary
     try:
         gal_data = pd.read_csv('catalogue.csv')
     except FileNotFoundError:
-        database.dataquery(RECORDS, args.username, args.password)
+        database.dataquery(RECORDS, args.USERNAME, args.PASSWORD)
         gal_data = pd.read_csv('catalogue.csv')
 
     gal_data = pd.DataFrame(gal_data)
 
-#    my_feature_columns = []
-#    for key in ['Image']:
-#        my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+    # populate label dictionary
+    g_types = np.unique(gal_data.Gtype.astype(str).tolist())
+    g_dict = dict(enumerate(g_types))
 
+    g_dict = dict((v, k) for k, v in g_dict.items())
+
+    gal_data['Gtype'] = gal_data['Gtype'].map(g_dict)
+
+    # Instantiate the cnn
     classifier = tf.estimator.Estimator(
         model_fn=model.cnn_model,
         params={
             # number of classes is the number of unique labels
             'n_classes': len(np.unique(gal_data.Gtype)),
-            # 'feature_columns': my_feature_columns
             })
 
     # Set up logging for predictions
@@ -84,8 +91,12 @@ def main():
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=50)
 
+    # Split data into train and test sets
+    train_data, test_data = train_test_split(gal_data, test_size=0.25)
+
+    # Training
     classifier.train(
-        input_fn=lambda: pipeline.train_input_fn(gal_data, BATCH_SIZE),
+        input_fn=lambda: pipeline.train_input_fn(train_data, args.BATCH_SIZE),
         steps=4,
         hooks=[logging_hook])
 

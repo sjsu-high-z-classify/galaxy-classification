@@ -28,24 +28,6 @@ import numpy as np
 
 import tensorflow as tf
 
-# =============================================================================
-# constants
-# =============================================================================
-
-# currently all of these constants are based on the CIFAR-10 example from tf
-# all these values will need to change for our actual dataset
-
-# Process images of this size. Note that this differs from the original CIFAR
-# image size of 32 x 32. If one alters this number, then the entire model
-# architecture will change and any model would need to be retrained.
-IMAGE_SIZE = 24
-
-# Global constants describing the CIFAR-10 data set.
-# TODO: find numbers that describe and are useful for our galaxy dataset
-NUM_CLASSES = 10
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10000
-
 # {x: x**2 for x in (2, 4, 6)} # potential auto population of type dict later
 gal_dict = {'S': 0, 'E': 1, 'UN': 2}
 
@@ -81,9 +63,7 @@ def get_image(ra, dec, gal_type):
 
     image = image.astype(np.float32)
 
-    label = gal_dict[gal_type.decode()]
-
-    return image, label
+    return image, gal_type
 
 
 def distorted_inputs(image, label):
@@ -129,14 +109,13 @@ def train_input_fn(record, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices((ra, dec, g_type))
 
     dataset = dataset.map(
-            lambda ra, dec, galType: tuple(
+            lambda ra, dec, g_type: tuple(
                     tf.py_func(get_image,
-                               [ra, dec, galType],
-                               [tf.float32, tf.int64])))
+                               [ra, dec, g_type],
+                               [tf.float32, tf.int32])))
 
     dataset = dataset.map(distorted_inputs)
 
     dataset = dataset.shuffle(1000).repeat().batch(batch_size)
 
     return dataset.make_one_shot_iterator().get_next()
-
