@@ -68,8 +68,8 @@ def main():
     except FileNotFoundError:
         try:
             database.dataquery(RECORDS, args.USERNAME, args.PASSWORD)
-        except Exception as e:
-            print(e)
+        except Exception as error:
+            print(error)
             sys.exit("Please check username and/or password")
 
         gal_data = pd.read_csv('catalogue.csv')
@@ -106,7 +106,14 @@ def main():
         steps=4,
         hooks=[logging_hook])
 
-    return classifier
+    # Evaluation
+    eval_results = classifier.evaluate(
+            input_fn=lambda: pipeline.eval_input_fn(
+                    test_data, args.BATCH_SIZE))
+
+    print(eval_results)
+
+    return eval_results
 
 
 if __name__ == '__main__':

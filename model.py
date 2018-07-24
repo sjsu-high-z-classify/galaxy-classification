@@ -86,25 +86,3 @@ def cnn_model(features, labels, mode, params):
 
     return tf.estimator.EstimatorSpec(
                     mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
-
-
-#def main(unused_argv):
-#    eval_data = tensor_test_ellipse  # Returns np.array
-#    eval_labels = np.asarray(ellipse_test_labels, dtype=np.int32)
-#    # Create estimator
-#    classifier = tf.estimator.Estimator(
-#            model_fn=cnn_model)
-
-    # Evaluate the model and print results
-#    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-#            x={"x": eval_data},
-#            y=eval_labels,
-#            num_epochs=1,
-#            shuffle=False)
-#    eval_results = classifier.evaluate(input_fn=eval_input_fn)
-#  print(eval_results)
-#  print(onehot_labels)
-
-  
-#if __name__ == '__main__':
-#    tf.app.run()

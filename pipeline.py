@@ -66,7 +66,7 @@ def get_image(ra, dec, gal_type):
     return image, gal_type
 
 
-def distorted_inputs(image, label):
+def _dict_wrapper(image, label):
     """
     ***SECTION IN PROGRESS***
 
@@ -81,10 +81,6 @@ def distorted_inputs(image, label):
         size.
         labels: Labels. 1D tensor of [batch_size] size.
     """
-
-    # Randomly flip the image horizontally.
-    image = tf.image.random_flip_left_right(image)
-    image = tf.image.random_flip_up_down(image)
 
     # return images in a dict. this can be useful if we need to pass other data
     # as well
@@ -114,8 +110,38 @@ def train_input_fn(record, batch_size):
                                [ra, dec, g_type],
                                [tf.float32, tf.int32])))
 
-    dataset = dataset.map(distorted_inputs)
+    dataset = dataset.map(_dict_wrapper)
 
     dataset = dataset.shuffle(1000).repeat().batch(batch_size)
+
+    return dataset.make_one_shot_iterator().get_next()
+
+
+def eval_input_fn(record, batch_size):
+    """Input function for CNN training.
+
+    This function defines how data is handled, processed, and parsed by the CNN
+    during training phase
+
+    Args:
+        record: A DataFrame slice representing one record from catalogue.csv
+        batch_size: training batch size
+    """
+    # Standardizing data types
+    ra = record.ra.astype(np.float32).tolist()
+    dec = record.dec.astype(np.float32).tolist()
+    g_type = record.Gtype.tolist()
+
+    dataset = tf.data.Dataset.from_tensor_slices((ra, dec, g_type))
+
+    dataset = dataset.map(
+            lambda ra, dec, g_type: tuple(
+                    tf.py_func(get_image,
+                               [ra, dec, g_type],
+                               [tf.float32, tf.int32])))
+
+    dataset = dataset.map(_dict_wrapper)
+
+    dataset = dataset.batch(batch_size)
 
     return dataset.make_one_shot_iterator().get_next()
