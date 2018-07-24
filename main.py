@@ -21,6 +21,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import sys
 import argparse
 
 import numpy as np
@@ -65,7 +66,12 @@ def main():
     try:
         gal_data = pd.read_csv('catalogue.csv')
     except FileNotFoundError:
-        database.dataquery(RECORDS, args.USERNAME, args.PASSWORD)
+        try:
+            database.dataquery(RECORDS, args.USERNAME, args.PASSWORD)
+        except Exception as e:
+            print(e)
+            sys.exit("Please check username and/or password")
+
         gal_data = pd.read_csv('catalogue.csv')
 
     gal_data = pd.DataFrame(gal_data)
