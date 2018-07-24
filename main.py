@@ -22,7 +22,9 @@ from __future__ import division
 from __future__ import print_function
 
 import sys
+import shutil
 import argparse
+import getpass
 
 import numpy as np
 import pandas as pd
@@ -36,50 +38,86 @@ import model
 import database
 
 
+def _download_db():
+    print('Populating the database requires a CasJobs login.')
+    username = input('Username: ')
+    password = getpass.getpass()
+
+    records = int(input('How many records would you like to populate the '
+                        'catalogue with? (Default 1e4)') or 1e4)
+
+    try:
+        database.dataquery(records, username, password)
+    except Exception as error:
+        print(error)
+
+        print("Please re-enter username and password.")
+        username = input("Username: ")
+        password = getpass.getpass()
+
+        try:
+            database.dataquery(records, username, password)
+        except Exception as error:
+            print(error)
+            sys.exit("Please check your username and password and re-run this "
+                     "application.")
+
+    return pd.read_csv('catalogue.csv')
+
+
 def main():
     """
     The main function.
 
-    This is the main function. It automatically populates the catalogue if
-    necessary, then starts training the model.
+    This is the main function. It can be run entirely from the command line,
+    but if there's no galaxy catalogue, it will prompt for a CasJobs login, as
+    well as the number of records to retreive.
 
-    TODO:
-        * Add evaluation section
+    Keyword Args:
+        -b, --batch_size: Batch size to use for training, testing, and
+                          prediction
+
+    Todo:
         * Add prediction section
-        * Make catalogue check/population more robust, or add a flag
     """
 
     # Parse command line arguments
     parser = argparse.ArgumentParser()
 
     # Add command line flags
-    parser.add_argument('-u', '--username', dest='USERNAME', help='User name')
-    parser.add_argument('-p', '--password', dest='PASSWORD', help='Password')
-    parser.add_argument('-B', '--batch_size', dest='BATCH_SIZE',
-                        help='Batch Size', default=100)
-    parser.add_argument('-R', '--records', dest='RECORDS', help='Number of'
-                        ' records, or total dataset size')
+    parser.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
+                        help='Batch Size.', default=100)
     parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
-                        help='Proportion of dataset to use for testing',
+                        help='Proportion of dataset to use for testing.',
                         default=0.25)
+    parser.add_argument('-N', '--cnn', dest='RUN', action='store_true',
+                        'Run the neural network. This is the default behavior '
+                        ' unless using the --reset or --db_reset flags')
+    parser.add_argument('-R', '--reset', dest='RESET', action='store_true',
+                        help='Reset the entire neural network.')
+    parser.add_argument('-D', '--db_reset', dest='DB', action='store_true',
+                        help='Reset the database')
 
     args = parser.parse_args()
 
-    # Populate the catalogue
-    if args.RECORDS is not None:
-        try:
-            database.dataquery(args.RECORDS, args.USERNAME, args.PASSWORD)
-        except Exception as error:
-            print(error)
-            sys.exit("Please check username and/or password")
+    # Check flags
+    if args.RESET:
+        # resets the entire neural network and catalogue
+        shutil.rmtree('./catalogue.csv')
+    elif args.DB:
+        shutil.rmtree('./catalogue.csv')
+
+    # Exit the program if either reset happened, unless flagged otherwise
+    if (args.RESET or args.DB) and not args.RUN:
+        sys.exit()
 
     # Open the catalogue, or create and open the catalogue if necessary
     try:
         gal_data = pd.read_csv('catalogue.csv')
     except FileNotFoundError:
-        sys.exit('No catalogue initialized. Please rerun the program and '
-                 'specify the size of the dataset to use, as well as a CasJobs'
-                 'username and password.')
+        print("Couldn't find galaxy catalogue. You will need to populate this "
+              "catalogue before proceeding further.")
+        gal_data = _download_db()
 
     gal_data = pd.DataFrame(gal_data)
 
@@ -125,4 +163,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    pass
+    # main()

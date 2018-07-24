@@ -67,23 +67,8 @@ def get_image(ra, dec, gal_type):
 
 
 def _dict_wrapper(image, label):
-    """
-    ***SECTION IN PROGRESS***
+    """Wraps feature columns in dict"""
 
-    Applies random distortions to input images (flipping vertically and/or
-    horizontally) before packaging.
-
-    Args:
-        data_dir: Path to the CIFAR-10 data directory.
-        batch_size: Number of images per batch.
-    Returns:
-        images: Images. 4D tensor of [batch_size, IMAGE_SIZE, IMAGE_SIZE, 3]
-        size.
-        labels: Labels. 1D tensor of [batch_size] size.
-    """
-
-    # return images in a dict. this can be useful if we need to pass other data
-    # as well
     return {'Image': image}, label
 
 
