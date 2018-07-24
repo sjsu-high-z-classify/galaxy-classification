@@ -35,8 +35,6 @@ import pipeline
 import model
 import database
 
-RECORDS = 10
-
 
 def main():
     """
@@ -59,20 +57,29 @@ def main():
     parser.add_argument('-p', '--password', dest='PASSWORD', help='Password')
     parser.add_argument('-B', '--batch_size', dest='BATCH_SIZE',
                         help='Batch Size', default=100)
+    parser.add_argument('-R', '--records', dest='RECORDS', help='Number of'
+                        ' records, or total dataset size')
+    parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
+                        help='Proportion of dataset to use for testing',
+                        default=0.25)
 
     args = parser.parse_args()
+
+    # Populate the catalogue
+    if args.RECORDS is not None:
+        try:
+            database.dataquery(args.RECORDS, args.USERNAME, args.PASSWORD)
+        except Exception as error:
+            print(error)
+            sys.exit("Please check username and/or password")
 
     # Open the catalogue, or create and open the catalogue if necessary
     try:
         gal_data = pd.read_csv('catalogue.csv')
     except FileNotFoundError:
-        try:
-            database.dataquery(RECORDS, args.USERNAME, args.PASSWORD)
-        except Exception as error:
-            print(error)
-            sys.exit("Please check username and/or password")
-
-        gal_data = pd.read_csv('catalogue.csv')
+        sys.exit('No catalogue initialized. Please rerun the program and '
+                 'specify the size of the dataset to use, as well as a CasJobs'
+                 'username and password.')
 
     gal_data = pd.DataFrame(gal_data)
 
@@ -98,7 +105,8 @@ def main():
         tensors=tensors_to_log, every_n_iter=50)
 
     # Split data into train and test sets
-    train_data, test_data = train_test_split(gal_data, test_size=0.25)
+    train_data, test_data = train_test_split(gal_data,
+                                             test_size=args.TEST_SIZE)
 
     # Training
     classifier.train(
@@ -108,8 +116,8 @@ def main():
 
     # Evaluation
     eval_results = classifier.evaluate(
-            input_fn=lambda: pipeline.eval_input_fn(
-                    test_data, args.BATCH_SIZE))
+        input_fn=lambda: pipeline.eval_input_fn(
+            test_data, args.BATCH_SIZE))
 
     print(eval_results)
 
