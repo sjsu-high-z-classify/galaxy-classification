@@ -187,4 +187,4 @@ if __name__ == '__main__':
                         help='Reset the database.')
 
     args = parser.parse_args()
-#    main(args)
+    main(args)

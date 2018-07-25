@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Input pipeline
+The data pipeline, where input fn's are defined and image data retreived
+Copyright (C) 2018  J. Andrew Casey-Clyde, Hiren Thummar, and Jean Donet
 
-This module contains all input function definitions and the data handline
-pipeline
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-TODO:
-    * Redefine get_images to only grab images from online
-        * Add label processing to appropriate mapping fn's
-    * add input function for evaluation
-    * add input function for prediction
-    * automatically build class library
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-Created on Fri Jun 15 14:53:52 2018
-
-@author: jacaseyclyde
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import absolute_import
@@ -28,29 +28,9 @@ import numpy as np
 
 import tensorflow as tf
 
-# {x: x**2 for x in (2, 4, 6)} # potential auto population of type dict later
-gal_dict = {'S': 0, 'E': 1, 'UN': 2}
 
-
-def get_image(ra, dec, gal_type):
-    """Fetches galaxy images from SDSS.
-
-    Fetches a 200x200 JPEG image of a galaxy from SDSS servers, converting it
-    to an array of RGB values. Additionally parses classification labels for
-    training images.
-
-    Args:
-        ra: galaxy right ascension
-        dec: galaxy declination
-        gal_type: type of galaxy, as determined by galaxy zoo
-
-    Returns:
-        image: a [height, width, depth] uint8 Tensor with the image data
-        label: an int32 Tensor with the label in the range 0..9.
-
-    TODO:
-        * Separate this out into it's own function that only handles the image
-    """
+def _get_image(ra, dec):
+    """Fetches (200x200) px galaxy images from SDSS based on ra and dec."""
 
     # Get image data for for object with ID objID
     image = imageio.imread('http://skyserver.sdss.org/dr14/SkyServerWS/'
@@ -63,11 +43,17 @@ def get_image(ra, dec, gal_type):
 
     image = image.astype(np.float32)
 
+    return image
+
+
+def _get_image_record(ra, dec, gal_type):
+    """Wrapper function for including the label for each image."""
+    image = _get_image(ra, dec)
     return image, gal_type
 
 
 def _dict_wrapper(image, label):
-    """Wraps feature columns in dict"""
+    """Wraps feature column tensors in dict."""
 
     return {'Image': image}, label
 
@@ -76,12 +62,17 @@ def train_input_fn(records, batch_size):
     """Input function for CNN training.
 
     This function defines how data is handled, processed, and parsed by the CNN
-    during training phase
+    during the training phase
 
     Args:
         record: A DataFrame slice representing one record from catalogue.csv
         batch_size: training batch size
+
+    Returns:
+        A nested structure of `tf.Tensor` objects for use as the input layer of
+        a CNN.
     """
+
     # Standardizing data types
     ra = records.ra.astype(np.float32).tolist()
     dec = records.dec.astype(np.float32).tolist()
@@ -90,11 +81,13 @@ def train_input_fn(records, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices((ra, dec, g_type))
 
     dataset = dataset.map(
-            lambda ra, dec, g_type: tuple(
-                    tf.py_func(get_image,
-                               [ra, dec, g_type],
-                               [tf.float32, tf.int32])))
+        lambda ra, dec, g_type: tuple(
+            tf.py_func(_get_image_record,
+                       [ra, dec, g_type],
+                       [tf.float32, tf.int32])))
 
+    # This wrapping has to happen seperately because it needs to operate on the
+    # tensors returned by py_func, which wraps the returns of _get_image_record
     dataset = dataset.map(_dict_wrapper)
 
     dataset = dataset.shuffle(1000).repeat().batch(batch_size)
@@ -103,15 +96,20 @@ def train_input_fn(records, batch_size):
 
 
 def eval_input_fn(record, batch_size):
-    """Input function for CNN training.
+    """Evaluation function for CNN testing.
 
     This function defines how data is handled, processed, and parsed by the CNN
-    during training phase
+    during the testing phase
 
     Args:
         record: A DataFrame slice representing one record from catalogue.csv
         batch_size: training batch size
+
+    Returns:
+        A nested structure of `tf.Tensor` objects for use as the input layer of
+        a CNN.
     """
+
     # Standardizing data types
     ra = record.ra.astype(np.float32).tolist()
     dec = record.dec.astype(np.float32).tolist()
@@ -120,10 +118,10 @@ def eval_input_fn(record, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices((ra, dec, g_type))
 
     dataset = dataset.map(
-            lambda ra, dec, g_type: tuple(
-                    tf.py_func(get_image,
-                               [ra, dec, g_type],
-                               [tf.float32, tf.int32])))
+        lambda ra, dec, g_type: tuple(
+            tf.py_func(_get_image_record,
+                       [ra, dec, g_type],
+                       [tf.float32, tf.int32])))
 
     dataset = dataset.map(_dict_wrapper)
 
