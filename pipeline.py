@@ -72,7 +72,7 @@ def _dict_wrapper(image, label):
     return {'Image': image}, label
 
 
-def train_input_fn(record, batch_size):
+def train_input_fn(records, batch_size):
     """Input function for CNN training.
 
     This function defines how data is handled, processed, and parsed by the CNN
@@ -83,9 +83,9 @@ def train_input_fn(record, batch_size):
         batch_size: training batch size
     """
     # Standardizing data types
-    ra = record.ra.astype(np.float32).tolist()
-    dec = record.dec.astype(np.float32).tolist()
-    g_type = record.Gtype.tolist()
+    ra = records.ra.astype(np.float32).tolist()
+    dec = records.dec.astype(np.float32).tolist()
+    g_type = records.Gtype.tolist()
 
     dataset = tf.data.Dataset.from_tensor_slices((ra, dec, g_type))
 

@@ -62,7 +62,7 @@ def _download_db():
             sys.exit("Please check your username and password and re-run this "
                      "application.")
 
-    return pd.read_csv('catalogue.csv')
+    return pd.read_csv('./catalogue.csv')
 
 
 def main():
@@ -88,15 +88,20 @@ def main():
     parser.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
                         help='Batch Size.', default=100)
     parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
-                        help='Proportion of dataset to use for testing.',
+                        help='Proportion of dataset to use for testing '
+                        '(default 0.25).',
                         default=0.25)
-    parser.add_argument('-N', '--cnn', dest='RUN', action='store_true',
-                        'Run the neural network. This is the default behavior '
-                        ' unless using the --reset or --db_reset flags')
+    parser.add_argument('-T', '--train', dest='TRAIN', action='store_true',
+                        help='Train and test the neural network.')
+    parser.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
+                        help='Number of epochs to train the network for '
+                        '(default 100).')
+    parser.add_argument('-P', '--predict', dest='PRED', action='store_true',
+                        help='Use the CNN to make predictions.')
     parser.add_argument('-R', '--reset', dest='RESET', action='store_true',
                         help='Reset the entire neural network.')
     parser.add_argument('-D', '--db_reset', dest='DB', action='store_true',
-                        help='Reset the database')
+                        help='Reset the database.')
 
     args = parser.parse_args()
 
@@ -108,14 +113,14 @@ def main():
         shutil.rmtree('./catalogue.csv')
 
     # Exit the program if either reset happened, unless flagged otherwise
-    if (args.RESET or args.DB) and not args.RUN:
+    if (args.RESET or args.DB) and not (args.TRAIN or args.PRED):
         sys.exit()
 
     # Open the catalogue, or create and open the catalogue if necessary
     try:
-        gal_data = pd.read_csv('catalogue.csv')
+        gal_data = pd.read_csv('./catalogue.csv')
     except FileNotFoundError:
-        print("Couldn't find galaxy catalogue. You will need to populate this "
+        print("Couldn't find galaxy catalogue. You will need to populate the "
               "catalogue before proceeding further.")
         gal_data = _download_db()
 
@@ -132,6 +137,7 @@ def main():
     # Instantiate the cnn
     classifier = tf.estimator.Estimator(
         model_fn=model.cnn_model,
+        model_dir='./model/checkpoints',
         params={
             # number of classes is the number of unique labels
             'n_classes': len(np.unique(gal_data.Gtype)),
@@ -146,16 +152,20 @@ def main():
     train_data, test_data = train_test_split(gal_data,
                                              test_size=args.TEST_SIZE)
 
-    # Training
-    classifier.train(
-        input_fn=lambda: pipeline.train_input_fn(train_data, args.BATCH_SIZE),
-        steps=4,
-        hooks=[logging_hook])
+    if args.TRAIN:
+        # Training
+        classifier.train(
+            input_fn=lambda: pipeline.train_input_fn(train_data,
+                                                     args.BATCH_SIZE),
+            steps=4,
+            hooks=[logging_hook])
 
-    # Evaluation
-    eval_results = classifier.evaluate(
-        input_fn=lambda: pipeline.eval_input_fn(
-            test_data, args.BATCH_SIZE))
+        # Evaluation
+        eval_results = classifier.evaluate(
+            input_fn=lambda: pipeline.eval_input_fn(
+                test_data, args.BATCH_SIZE))
+
+        # save the model
 
     print(eval_results)
 
@@ -163,5 +173,4 @@ def main():
 
 
 if __name__ == '__main__':
-    pass
-    # main()
+    main()
