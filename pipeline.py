@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 The data pipeline, where input fn's are defined and image data retreived
-Copyright (C) 2018  J. Andrew Casey-Clyde, Hiren Thummar, and Jean Donet
+Copyright (C) 2018  J. Andrew Casey-Clyde and Hiren Thummar
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -53,9 +53,9 @@ def _get_image_record(ra, dec, gal_type):
 
 
 def _dict_wrapper(image, label):
-    """Wraps feature column tensors in dict."""
+    """Wraps feature column tensors and labels in dict."""
 
-    return {'Image': image}, label
+    return {'Image': image, 'label': label}
 
 
 def train_input_fn(records, batch_size):

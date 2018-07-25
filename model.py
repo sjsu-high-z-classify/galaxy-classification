@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jun 17 18:26:40 2018
+CNN model definition module.
+Copyright (C) 2018  Jean Donet and J. Andrew Casey-Clyde
 
-@author: papi
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 # Importing libraries
@@ -13,13 +25,29 @@ import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
-def cnn_model(features, labels, mode, params):
-    """CNN model function"""
+def cnn_model(features, mode, params):
+    """CNN model function
+
+    This is the singular function of this file, and is where the convolutional
+    neural network itself is defined.
+
+    Args:
+        features (dict(tf.Tensor)): dict of input features (and labels if
+            training or testing)
+        mode (tf.estimator.ModeKeys): What mode the model is running in.
+        params (dict): A dict of other params, including the number of classes.
+
+    Returns:
+        tf.estimator.EstimatorSpec: A tensorflow object containing the results
+            of training, testing, or prediction (depending on the mode), to be
+            evaluated by the tf.estimator.Estimator object.
+    """
+    # Parse out labels if training or testing
+    if mode != tf.estimator.ModeKeys.PREDICT:
+        labels = features.pop('label')
+
     # Input layer
-#    input_layer = features['Image']
     input_layer = tf.reshape(features['Image'], [-1, 200, 200, 3])
-#    input_layer = tf.feature_column.input_layer(
-#            features, params['feature_columns'])
 
     # Convolution layer 1
     conv1 = tf.layers.conv2d(inputs=input_layer,
