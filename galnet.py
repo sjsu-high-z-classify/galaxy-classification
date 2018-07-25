@@ -53,80 +53,59 @@ def download_db():
     password = getpass.getpass()
 
     records = int(input('How many records would you like to populate the '
-                        'catalogue with? (Default 1e4)') or 1e4)
+                        'catalogue with? (Default 1e4): ') or 1e4)
 
     try:
         database.dataquery(records, username, password)
     except Exception as error:
         print(error)
 
-        print("Please re-enter username and password.")
-        username = input("Username: ")
-        password = getpass.getpass()
+        while True:
+            print("\nPlease re-enter username and password.")
+            username = input("Username: ")
+            password = getpass.getpass()
 
-        try:
-            database.dataquery(records, username, password)
-        except Exception as error:
-            print(error)
-            sys.exit("Please check your username and password and re-run this "
-                     "application.")
+            try:
+                database.dataquery(records, username, password)
+                return pd.read_csv('./catalogue.csv')
+            except Exception as error:
+                print(error)
 
     return pd.read_csv('./catalogue.csv')
 
 
-def main():
+def main(argv):
     """The main function.
 
-    This is the main function. It can be run entirely from the command line,
-    but if there's no galaxy catalogue, it will prompt for a CasJobs login, as
-    well as the number of records to retreive.
+    This is the main function. Note that default values for all flags are set
+    outside of this definition, therefore values for all attributes of argv
+    will need to be initialized if not called directly (e.g. through
+    `$ python galnet.py -T`).
 
-    Keyword Args:
-        -b, --batch_size: Batch size to use with the dataset
-        -t, --test_size: Proportion of dataset to use for testing
-        -T, --train: Train and test the CNN
-        -E, --epochs: Number of epochs to train the network for
-        -P, --predict: Make classification predictions on a dataset
-        -R, --reset: resets the entire neural network, including catalogue
-        -D, --db_reset: resets (deletes) the catalogue
+    Args:
+        argv: An argparse Namespace object with the following attributes.
+            BATCH_SIZE (int): Batch size to use with the dataset.
+            TEST_SIZE (float): Proportion of dataset to use for testing.
+            TRAIN (bool): Train and test the CNN.
+            EPOCHS (int): Number of epochs to train the network for.
+            PRED (bool): Make classification predictions on a dataset
+            RESET (bool): Resets the entire neural network, including catalogue
+            DB (bool): Resets (deletes) the catalogue
 
     Todo:
         * Add prediction section
     """
 
-    # Parse command line arguments
-    parser = argparse.ArgumentParser()
-
-    # Add command line flags
-    parser.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
-                        help='Batch Size.', default=100)
-    parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
-                        help='Proportion of dataset to use for testing '
-                        '(default 0.25).',
-                        default=0.25)
-    parser.add_argument('-T', '--train', dest='TRAIN', action='store_true',
-                        help='Train and test the neural network.')
-    parser.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
-                        help='Number of epochs to train the network for '
-                        '(default 100).')
-    parser.add_argument('-P', '--predict', dest='PRED', action='store_true',
-                        help='Use the CNN to make predictions.')
-    parser.add_argument('-R', '--reset', dest='RESET', action='store_true',
-                        help='Reset the entire neural network.')
-    parser.add_argument('-D', '--db_reset', dest='DB', action='store_true',
-                        help='Reset the database.')
-
-    args = parser.parse_args()
-
     # Check flags
-    if args.RESET:
+    if argv.RESET:
         # resets the entire neural network and catalogue
+        shutil.rmtree('./model/checkpoints')
         shutil.rmtree('./catalogue.csv')
-    elif args.DB:
+    elif argv.DB:
         shutil.rmtree('./catalogue.csv')
 
     # Exit the program if either reset happened, unless flagged otherwise
-    if (args.RESET or args.DB) and not (args.TRAIN or args.PRED):
+    if (argv.RESET or argv.DB) and not (argv.TRAIN or argv.PRED):
         sys.exit()
 
     # Open the catalogue, or create and open the catalogue if necessary
@@ -164,27 +143,48 @@ def main():
 
     # Split data into train and test sets
     train_data, test_data = train_test_split(gal_data,
-                                             test_size=args.TEST_SIZE)
+                                             test_size=argv.TEST_SIZE)
 
-    if args.TRAIN:
+    if argv.TRAIN:
         # Training
         classifier.train(
             input_fn=lambda: pipeline.train_input_fn(train_data,
-                                                     args.BATCH_SIZE),
+                                                     argv.BATCH_SIZE),
             steps=4,
             hooks=[logging_hook])
 
         # Evaluation
         eval_results = classifier.evaluate(
             input_fn=lambda: pipeline.eval_input_fn(
-                test_data, args.BATCH_SIZE))
+                test_data, argv.BATCH_SIZE))
 
-        # save the model
+        print(eval_results)
 
-    print(eval_results)
-
-    return eval_results
+        return eval_results
 
 
 if __name__ == '__main__':
-    main()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser()
+
+    # Add command line flags
+    parser.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
+                        help='Batch Size.', default=100)
+    parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
+                        help='Proportion of dataset to use for testing '
+                        '(default 0.25).',
+                        default=0.25)
+    parser.add_argument('-T', '--train', dest='TRAIN', action='store_true',
+                        help='Train and test the neural network.')
+    parser.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
+                        help='Number of epochs to train the network for '
+                        '(default 100).')
+    parser.add_argument('-P', '--predict', dest='PRED', action='store_true',
+                        help='Use the CNN to make predictions.')
+    parser.add_argument('-R', '--reset', dest='RESET', action='store_true',
+                        help='Reset the entire neural network.')
+    parser.add_argument('-D', '--db_reset', dest='DB', action='store_true',
+                        help='Reset the database.')
+
+    args = parser.parse_args()
+#    main(args)
