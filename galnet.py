@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Main program file
+This is GalNet, a Convolutional Neural Network (CNN) made to classify galaxies.
+Copyright (C) 2018  J. Andrew Casey-Clyde, Hiren Thummar, and Jean Donet
 
-The goal of this project is to create an automated way to catalogue and
-classify observed galaxies, with a goal of classifying all unclassified
-galaxies for which we have observations. This project acheives this through the
-use of a Convolutional Neural Network (CNN) trained using galaxies from the
-Galaxy Zoo catalogue.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-This file is the main file of the project, from which all the other modules in
-the project are called.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-Created on Fri Jul  6 11:52:11 2018
-
-@author: J. Andrew Casey-Clyde (jacaseyclyde)
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import absolute_import
@@ -38,7 +39,15 @@ import model
 import database
 
 
-def _download_db():
+def download_db():
+    """Download the catalogue.
+
+    This function starts a user prompt, asking for a CasJobs login, as well as
+    how many records to download. Catalogue will be saved in catalogue.csv.
+
+    Returns:
+        DataFrame: A pandas DataFrame object containing the catalogue.
+    """
     print('Populating the database requires a CasJobs login.')
     username = input('Username: ')
     password = getpass.getpass()
@@ -66,16 +75,20 @@ def _download_db():
 
 
 def main():
-    """
-    The main function.
+    """The main function.
 
     This is the main function. It can be run entirely from the command line,
     but if there's no galaxy catalogue, it will prompt for a CasJobs login, as
     well as the number of records to retreive.
 
     Keyword Args:
-        -b, --batch_size: Batch size to use for training, testing, and
-                          prediction
+        -b, --batch_size: Batch size to use with the dataset
+        -t, --test_size: Proportion of dataset to use for testing
+        -T, --train: Train and test the CNN
+        -E, --epochs: Number of epochs to train the network for
+        -P, --predict: Make classification predictions on a dataset
+        -R, --reset: resets the entire neural network, including catalogue
+        -D, --db_reset: resets (deletes) the catalogue
 
     Todo:
         * Add prediction section
@@ -122,8 +135,9 @@ def main():
     except FileNotFoundError:
         print("Couldn't find galaxy catalogue. You will need to populate the "
               "catalogue before proceeding further.")
-        gal_data = _download_db()
+        gal_data = download_db()
 
+    # Ensures this is a DataFrame, since read_csv can also return a TextStream
     gal_data = pd.DataFrame(gal_data)
 
     # populate label dictionary
