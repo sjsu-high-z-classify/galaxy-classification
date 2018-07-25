@@ -105,3 +105,4 @@ venv.bak/
 *.ipynb
 .DS_Store
 data_GZ1.csv
+*.tex
