@@ -18,8 +18,8 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Todo:
-    * Fetch data from PanSTARRS
     * Prediction input function
+    * Fetch data from PanSTARRS
 """
 
 from __future__ import absolute_import
@@ -32,7 +32,7 @@ import numpy as np
 
 import tensorflow as tf
 
-from urllib.error import URLError
+# from urllib.error import URLError
 
 
 def _get_image(ra, dec):
@@ -52,7 +52,7 @@ def _get_image(ra, dec):
                                    '&height=200'.format(ra, dec))
 
             return image.astype(np.float32)
-        except URLError as error:
+        except Exception as error:
             i += 1
             print("URL Timeout, re-attempting "
                   "({0} attempt(s) so far)...".format(i))
