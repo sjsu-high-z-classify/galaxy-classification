@@ -160,31 +160,29 @@ def main(argv):
 
         print(eval_results)
 
-        return eval_results
-
 
 if __name__ == '__main__':
     # Parse command line arguments
-    parser = argparse.ArgumentParser()
+    PARSER = argparse.ArgumentParser()
 
     # Add command line flags
-    parser.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
+    PARSER.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
                         help='Batch Size.', default=100)
-    parser.add_argument('-t', '--test_size', dest='TEST_SIZE',
+    PARSER.add_argument('-t', '--test_size', dest='TEST_SIZE',
                         help='Proportion of dataset to use for testing '
                         '(default 0.25).',
                         default=0.25)
-    parser.add_argument('-T', '--train', dest='TRAIN', action='store_true',
+    PARSER.add_argument('-T', '--train', dest='TRAIN', action='store_true',
                         help='Train and test the neural network.')
-    parser.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
+    PARSER.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
                         help='Number of epochs to train the network for '
                         '(default 100).')
-    parser.add_argument('-P', '--predict', dest='PRED', action='store_true',
+    PARSER.add_argument('-P', '--predict', dest='PRED', action='store_true',
                         help='Use the CNN to make predictions.')
-    parser.add_argument('-R', '--reset', dest='RESET', action='store_true',
+    PARSER.add_argument('-R', '--reset', dest='RESET', action='store_true',
                         help='Reset the entire neural network.')
-    parser.add_argument('-D', '--db_reset', dest='DB', action='store_true',
+    PARSER.add_argument('-D', '--db_reset', dest='DB', action='store_true',
                         help='Reset the database.')
 
-    args = parser.parse_args()
-    main(args)
+    ARGS = PARSER.parse_args()
+    main(ARGS)

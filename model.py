@@ -84,12 +84,12 @@ def cnn_model(features, mode, params):
     logits = tf.layers.dense(inputs=dropout, units=params['n_classes'])
 
     predictions = {
-            # Generate predictons (for PREDICT and EVAL mode)
-            "classes": tf.argmax(input=logits, axis=1),
-            # Add 'soft_tensor' to the graph. It is used by PREDICT and by the
-            # 'logging_book.
-            'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
-            }
+        # Generate predictons (for PREDICT and EVAL mode)
+        "classes": tf.argmax(input=logits, axis=1),
+        # Add 'soft_tensor' to the graph. It is used by PREDICT and by the
+        # 'logging_book.
+        'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
+        }
 
     if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
@@ -109,8 +109,8 @@ def cnn_model(features, mode, params):
 
     # Add evaluation metrics (for EVAL mode)
     eval_metric_ops = {
-            'accuracy': tf.metrics.accuracy(
-                    labels=labels, predictions=predictions['classes'])}
+        'accuracy': tf.metrics.accuracy(
+            labels=labels, predictions=predictions['classes'])}
 
     return tf.estimator.EstimatorSpec(
-                    mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+        mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
