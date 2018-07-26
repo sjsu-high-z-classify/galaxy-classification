@@ -1,31 +1,44 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Database query and catalogue population module
+CNN model definition module.
+Copyright (C) 2018  Hiren Thummar and J. Andrew Casey-Clyde
 
-This module is for populating a csv catalogue of classified galaxies for use in
-training the Convolutional Neural Network (CNN) contained in the rest of this
-project.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Technical info:
-    Source Catalogue: Galaxy Zoo 1
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-@author: Hiren Thummar
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+Todo:
+    * Update to GalaxyZoo2
 """
+
 import pandas as pd
 import numpy as np
 from SciServer import Authentication, CasJobs
 
 
 def dataquery(records, username, password):
-    """
-    Queries CasJobs to retrieve Galaxy Zoo 1 catalogue
+    """Download galaxy classification catalogue.
+
+    Downloads a catalogue of specobjid, objid8, ra, dec, and classification
+    from the GalaxyZoo catalogue
 
     Args:
-        records -- number of records to retreive
+        records (int): Number of records to retreive.
+        username (str): CasJobs username.
+        password (str): CasJobs password.
     """
 
-    token = Authentication.login(username, password)
+    Authentication.login(username, password)
 
     query = 'SELECT TOP {0}'.format(records) + ' specobjid, objid as objid8,' \
         + ' ra, dec, spiral, elliptical, uncertain FROM ZooSpec'
