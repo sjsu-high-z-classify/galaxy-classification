@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 This is GalNet, a Convolutional Neural Network (CNN) made to classify galaxies.
-Copyright (C) 2018  J. Andrew Casey-Clyde, Hiren Thummar, and Jean Donet
+Copyright (C) 2018  J. Andrew Casey-Clyde, Jean Donet, and Hiren Thummar
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ def download_db():
     username = input('Username: ')
     password = getpass.getpass()
 
-    records = int(input('How many records would you like to populate the '
-                        'catalogue with? (Default 1e4): ') or 1e4)
+    records = int(float(input('How many records would you like to populate the'
+                              ' catalogue with? (Default 1e4): ')) or 1e4)
 
     try:
         database.dataquery(records, username, password)
