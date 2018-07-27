@@ -1,4 +1,6 @@
 # Application Specific
+eval_results.csv
+model/
 catalogue.csv
 
 # Byte-compiled / optimized / DLL files
