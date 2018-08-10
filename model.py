@@ -54,7 +54,7 @@ def cnn_model(features, mode, params):
                              filters=32,
                              kernel_size=25,
                              padding='same',
-                             activation=tf.nn.relu)
+                             activation=tf.nn.elu)
 
     # Max Pool layer 1
     pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=2, strides=2)
@@ -64,7 +64,7 @@ def cnn_model(features, mode, params):
                              filters=64,
                              kernel_size=25,
                              padding='same',
-                             activation=tf.nn.relu)
+                             activation=tf.nn.elu)
 
     # Max pool layer 2
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=2, strides=2)
@@ -74,7 +74,7 @@ def cnn_model(features, mode, params):
 
     dense = tf.layers.dense(inputs=pool2_flat,
                             units=1024,
-                            activation=tf.nn.relu)
+                            activation=tf.nn.elu)
 
     dropout = tf.layers.dropout(inputs=dense,
                                 rate=0.4,
