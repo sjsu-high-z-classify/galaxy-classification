@@ -39,7 +39,7 @@ import model
 import database
 
 
-def download_db():
+def download_db(records, username, password):
     """Download the catalogue.
 
     This function starts a user prompt, asking for a CasJobs login, as well as
@@ -48,28 +48,7 @@ def download_db():
     Returns:
         DataFrame: A pandas DataFrame object containing the catalogue.
     """
-    print('Populating the database requires a CasJobs login.')
-    username = input('Username: ')
-    password = getpass.getpass()
-
-    records = int(float(input('How many records would you like to populate the'
-                              ' catalogue with? (Default 1e4): ')) or 1e4)
-
-    try:
-        database.dataquery(records, username, password)
-    except Exception as error:
-        print(error)
-
-        while True:
-            print("\nPlease re-enter username and password.")
-            username = input("Username: ")
-            password = getpass.getpass()
-
-            try:
-                database.dataquery(records, username, password)
-                return pd.read_csv('./catalogue.csv')
-            except Exception as error:
-                print(error)
+    database.dataquery(records, username, password)
 
     return pd.read_csv('./catalogue.csv')
 
@@ -110,11 +89,11 @@ def main(argv):
 
     # Open the catalogue, or create and open the catalogue if necessary
     try:
-        gal_data = pd.read_csv('./catalogue.csv')
+        gal_data = pd.read_csv('catalogue.csv')
     except FileNotFoundError:
         print("Couldn't find galaxy catalogue. You will need to populate the "
               "catalogue before proceeding further.")
-        gal_data = download_db()
+        gal_data = download_db(argv.RECORDS, argv.USERNAME, argv.PASSWORD)
 
     # Ensures this is a DataFrame, since read_csv can also return a TextStream
     gal_data = pd.DataFrame(gal_data)
@@ -150,7 +129,7 @@ def main(argv):
         classifier.train(
             input_fn=lambda: pipeline.train_input_fn(train_data,
                                                      argv.BATCH_SIZE),
-            steps=4,
+            steps=argv.EPOCHS,
             hooks=[logging_hook])
 
         # Evaluation
@@ -166,6 +145,12 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()
 
     # Add command line flags
+    PARSER.add_argument('-u', '--User', action = "store",
+                        type = str, dest = 'USERNAME', default = "panda1")
+    PARSER.add_argument('-p','--Password', dest = 'PASSWORD', action= "store",
+                        type = str, default = "Panda")
+    PARSER.add_argument('-r', '--records', dest='RECORDS',action="store", 
+			help='number of objects to download from SDSS', default=1000)
     PARSER.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
                         help='Batch Size.', default=100)
     PARSER.add_argument('-t', '--test_size', dest='TEST_SIZE',
