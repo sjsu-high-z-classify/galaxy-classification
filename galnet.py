@@ -25,7 +25,6 @@ from __future__ import print_function
 import sys
 import shutil
 import argparse
-import getpass
 
 import numpy as np
 import pandas as pd
@@ -145,12 +144,13 @@ if __name__ == '__main__':
     PARSER = argparse.ArgumentParser()
 
     # Add command line flags
-    PARSER.add_argument('-u', '--User', action = "store",
-                        type = str, dest = 'USERNAME', default = "panda1")
-    PARSER.add_argument('-p','--Password', dest = 'PASSWORD', action= "store",
-                        type = str, default = "Panda")
-    PARSER.add_argument('-r', '--records', dest='RECORDS',action="store", 
-			help='number of objects to download from SDSS', default=1000)
+    PARSER.add_argument('-u', '--User', action='store',
+                        type=str, dest='USERNAME', default="panda1")
+    PARSER.add_argument('-p', '--Password', dest='PASSWORD', action='store',
+                        type=str, default="Panda")
+    PARSER.add_argument('-r', '--records', dest='RECORDS', action='store',
+                        help='number of objects to download from SDSS',
+                        default=1000)
     PARSER.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
                         help='Batch Size.', default=100)
     PARSER.add_argument('-t', '--test_size', dest='TEST_SIZE',
