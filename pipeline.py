@@ -59,16 +59,16 @@ def _get_image(ra, dec):
             pass
 
 
-def _get_image_record(ra, dec, gal_type):
+def _get_image_record(objid, ra, dec, gal_type):
     """Wrapper function for including the label for each image."""
     image = _get_image(ra, dec)
-    return image, gal_type
+    return objid, image, gal_type
 
 
-def _dict_wrapper(image, label):
+def _dict_wrapper(objid, image, label):
     """Wraps feature column tensors and labels in dict."""
 
-    return {'Image': image, 'label': label}
+    return {'Image': image, 'label': label, 'objid': objid}
 
 
 def train_input_fn(records, batch_size):
@@ -87,6 +87,7 @@ def train_input_fn(records, batch_size):
     """
 
     # Standardizing data types
+    objid = records.specobjid.astype(np.int32).tolist()
     ra = records.ra.astype(np.float32).tolist()
     dec = records.dec.astype(np.float32).tolist()
     g_type = records.Gtype.tolist()
@@ -96,8 +97,8 @@ def train_input_fn(records, batch_size):
     dataset = dataset.map(
         lambda ra, dec, g_type: tuple(
             tf.py_func(_get_image_record,
-                       [ra, dec, g_type],
-                       [tf.float32, tf.int32])))
+                       [objid, ra, dec, g_type],
+                       [tf.int32, tf.float32, tf.int32])))
 
     # This wrapping has to happen seperately because it needs to operate on the
     # tensors returned by py_func, which wraps the returns of _get_image_record

@@ -87,7 +87,7 @@ def cnn_model(features, mode, params):
         # Generate predictons (for PREDICT and EVAL mode)
         "classes": tf.argmax(input=logits, axis=1),
         # Add 'soft_tensor' to the graph. It is used by PREDICT and by the
-        # 'logging_book.
+        # 'logging_hook.
         'probabilities': tf.nn.softmax(logits, name='softmax_tensor')
         }
 
@@ -99,7 +99,7 @@ def cnn_model(features, mode, params):
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001)
         train_op = optimizer.minimize(loss=loss,
                                       global_step=tf.train.get_global_step())
 

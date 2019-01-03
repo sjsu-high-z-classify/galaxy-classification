@@ -117,7 +117,7 @@ def main(argv):
     # Set up logging for predictions
     tensors_to_log = {"probabilities": "softmax_tensor"}
     logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=50)
+        tensors=tensors_to_log, every_n_iter=1)
 
     # Split data into train and test sets
     train_data, test_data = train_test_split(gal_data,
