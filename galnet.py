@@ -150,18 +150,18 @@ if __name__ == '__main__':
                         type=str, default="Panda")
     PARSER.add_argument('-r', '--records', dest='RECORDS', action='store',
                         help='number of objects to download from SDSS',
-                        default=1000)
+                        default=1000, type=int)
     PARSER.add_argument('-b', '--batch_size', dest='BATCH_SIZE',
-                        help='Batch Size.', default=100)
+                        help='Batch Size.', default=100, type=int)
     PARSER.add_argument('-t', '--test_size', dest='TEST_SIZE',
-                        help='Proportion of dataset to use for testing '
-                        '(default 0.25).',
-                        default=0.25)
+                        help="Proportion of dataset to use for testing. "
+                        "(default 0.25).",
+                        default=0.25, type=float)
     PARSER.add_argument('-T', '--train', dest='TRAIN', action='store_true',
-                        help='Train and test the neural network.')
-    PARSER.add_argument('-E', '--epochs', dest='EPOCHS', default=100,
-                        help='Number of epochs to train the network for '
-                        '(default 100).')
+                        help="Train and test the neural network.")
+    PARSER.add_argument('-E', '--epochs', dest='EPOCHS', default=100, type=int,
+                        help="Number of epochs to train the network for "
+                        "(default 100).")
     PARSER.add_argument('-P', '--predict', dest='PRED', action='store_true',
                         help='Use the CNN to make predictions.')
     PARSER.add_argument('-R', '--reset', dest='RESET', action='store_true',

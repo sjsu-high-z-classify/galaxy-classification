@@ -70,7 +70,7 @@ def cnn_model(features, mode, params):
     pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=2, strides=2)
 
     # Dense layer
-    pool2_flat = tf.reshape(pool2, [-1, 50*50*64])
+    pool2_flat = tf.reshape(pool2, [-1, 50 * 50 * 64])
 
     dense = tf.layers.dense(inputs=pool2_flat,
                             units=1024,

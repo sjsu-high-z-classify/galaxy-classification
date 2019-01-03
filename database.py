@@ -37,7 +37,6 @@ def dataquery(records, username, password):
         username (str): CasJobs username.
         password (str): CasJobs password.
     """
-
     Authentication.login(username, password)
 
     query = 'SELECT TOP {0}'.format(records) + ' specobjid, objid as objid8,' \
