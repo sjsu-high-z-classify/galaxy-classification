@@ -125,6 +125,7 @@ def eval_input_fn(record, batch_size):
     """
 
     # Standardizing data types
+    objid = record.specobjid.astype(np.int32).tolist()
     ra = record.ra.astype(np.float32).tolist()
     dec = record.dec.astype(np.float32).tolist()
     g_type = record.Gtype.tolist()
@@ -134,8 +135,8 @@ def eval_input_fn(record, batch_size):
     dataset = dataset.map(
         lambda ra, dec, g_type: tuple(
             tf.py_func(_get_image_record,
-                       [ra, dec, g_type],
-                       [tf.float32, tf.int32])))
+                       [objid, ra, dec, g_type],
+                       [tf.int32, tf.float32, tf.int32])))
 
     dataset = dataset.map(_dict_wrapper)
 
