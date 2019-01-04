@@ -96,6 +96,7 @@ def cnn_model(features, mode, params):
 
     # Configure Loss (for both TRAIN and EVAL modes)
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    tf.summary.scalar('loss', loss)
     predictions['loss'] = tf.reduce_mean(loss, name='m_loss')
 
     # Configure the Training Op (for TRAIN mode)
@@ -104,14 +105,21 @@ def cnn_model(features, mode, params):
         train_op = optimizer.minimize(loss=loss,
                                       global_step=tf.train.get_global_step())
 
-        return tf.estimator.EstimatorSpec(mode=mode,
-                                          loss=loss,
-                                          train_op=train_op)
+        est = tf.estimator.EstimatorSpec(mode=mode,
+                                         loss=loss,
+                                         train_op=train_op)
+
+    # Calculate accuracies during training as well for metric tracking
+    accuracy = tf.metrics.accuracy(labels=labels,
+                                       predictions=predictions['classes'])
+    tf.summary.scalar('accuracy', accuracy)
 
     # Add evaluation metrics (for EVAL mode)
-    eval_metric_ops = {
-        'accuracy': tf.metrics.accuracy(
-            labels=labels, predictions=predictions['classes'])}
+    if mode == tf.estimator.ModeKeys.EVAL:
+        eval_metric_ops = {
+            'accuracy': accuracy}
 
-    return tf.estimator.EstimatorSpec(
-        mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+        est = tf.estimator.EstimatorSpec(
+                mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+
+    return est
