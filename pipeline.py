@@ -42,19 +42,12 @@ def _get_image(ra, dec):
     i = 0
     while True:
         try:
-            image = imageio.imread('http://skyserver.sdss.org/'
-                                   'dr14/SkyServerWS/ImgCutout/getjpeg'
-                                   '?TaskName=Skyserver.Explore.Image'
-                                   '&ra={0}'
-                                   '&dec={1}'
-                                   '&scale=.2'
-                                   '&width=200'
-                                   '&height=200'.format(ra, dec))
+            image = SkyServer.getJpegImgCutout(ra, dec, scale=0.2, width=200, height=200, dataRelease='DR14')
 
             return image.astype(np.float32)
         except Exception as error:
             i += 1
-            print("URL Timeout, re-attempting "
+            print("Query Timeout, re-attempting "
                   "({0} attempt(s) so far)...".format(i))
             pass
 
