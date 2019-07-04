@@ -4,7 +4,6 @@
 import numpy as np
 import pandas as pd
 
-import keras
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Model
 from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
