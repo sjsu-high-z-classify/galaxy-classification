@@ -103,12 +103,4 @@ dependencies:
   - wheel=0.31.0=py36_3
   - yaml=0.1.7=2
   - zlib=1.2.11=5
-  - pip:
-    - backports.shutil-get-terminal-size==1.0.0
-    - emcee==3.0rc2
-    - keras==2.2.4
-    - mcorbit==0.0.0
-    - sciserver==2.0.13
-    - tables==3.4.3
-prefix: /home/jcasey/.conda/envs/galnet-gpu
 
