@@ -4,13 +4,10 @@
 import os
 from time import sleep
 
-import numpy as np
 import pandas as pd
 
-import SciServer
 from SciServer import SkyServer, Authentication
 
-import matplotlib.pyplot as plt
 from PIL import Image
 
 from tqdm import tqdm
@@ -20,12 +17,14 @@ try:
 except FileExistsError:
     pass
 
-token = Authentication.login('jacaseyclyde', 'ub3rl337')
+token = Authentication.login('***', '***')
 
 sql = 'SELECT gz2.specobjid, gz2.ra, gz2.dec, dr7.petroR90_r, ' \
       'gz2.t01_smooth_or_features_a01_smooth_weighted_fraction AS t01a01, ' \
-      'gz2.t01_smooth_or_features_a02_features_or_disk_weighted_fraction AS t01a02, ' \
-      'gz2.t01_smooth_or_features_a03_star_or_artifact_weighted_fraction AS t01a03, ' \
+      'gz2.t01_smooth_or_features_a02_features_or_disk_weighted_fraction AS ' \
+      't01a02, ' \
+      'gz2.t01_smooth_or_features_a03_star_or_artifact_weighted_fraction AS '\
+      't01a03, ' \
       'gz2.t02_edgeon_a04_yes_weighted_fraction AS t02a04, ' \
       'gz2.t02_edgeon_a05_no_weighted_fraction AS t02a05, ' \
       'gz2.t03_bar_a06_bar_weighted_fraction AS t03a06, ' \
@@ -33,7 +32,8 @@ sql = 'SELECT gz2.specobjid, gz2.ra, gz2.dec, dr7.petroR90_r, ' \
       'gz2.t04_spiral_a08_spiral_weighted_fraction AS t04a08, ' \
       'gz2.t04_spiral_a09_no_spiral_weighted_fraction AS t04a09, ' \
       'gz2.t05_bulge_prominence_a10_no_bulge_weighted_fraction AS t05a10, ' \
-      'gz2.t05_bulge_prominence_a11_just_noticeable_weighted_fraction AS t05a11, ' \
+      'gz2.t05_bulge_prominence_a11_just_noticeable_weighted_fraction AS '\
+      't05a11, ' \
       'gz2.t05_bulge_prominence_a12_obvious_weighted_fraction AS t05a12, ' \
       'gz2.t05_bulge_prominence_a13_dominant_weighted_fraction AS t05a13, ' \
       'gz2.t06_odd_a14_yes_weighted_fraction AS t06a14, ' \
@@ -65,7 +65,7 @@ sql = 'SELECT gz2.specobjid, gz2.ra, gz2.dec, dr7.petroR90_r, ' \
 
 try:
     gz2 = pd.read_hdf('data/gz2.h5')
-except:
+except Exception:
     gz2 = SkyServer.sqlSearch(sql=sql, dataRelease='DR15')
     gz2 = gz2.assign(imgpath=None)
     gz2.to_hdf('data/gz2.h5', key='gz2', append=False, mode='w')
@@ -75,13 +75,14 @@ with tqdm(total=len(gz2.index), unit='object') as pbar:
         if obj['imgpath'] is not None:
             pbar.update(1)
             continue
-        
+
         attempts = 0
         img = None
         while True:
             try:
                 img = SkyServer.getJpegImgCutout(ra=obj['ra'], dec=obj['dec'],
-                                                 width=424, height=424, scale=(0.02 * obj['petroR90_r']),
+                                                 width=424, height=424,
+                                                 scale=(0.02 * obj['petroR90_r']),
                                                  dataRelease='DR15')
             except Exception as e:
                 attempts += 1
@@ -90,13 +91,13 @@ with tqdm(total=len(gz2.index), unit='object') as pbar:
                 sleep(1)
                 continue
             break
-        
+
         if img is not None:
             imgpath = "data/img/{0}.jpeg".format(obj['specobjid'])
             Image.fromarray(img).save(imgpath)
             gz2.at[index, 'imgpath'] = imgpath
             gz2.to_hdf('data/gz2.h5', key='gz2', append=False, mode='w')
-            
+
         pbar.update(1)
 
 gz2.dropna(axis=0, subset=['imgpath'], inplace=True)
