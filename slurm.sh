@@ -9,5 +9,5 @@
 #SBATCH --mail-user=james.casey-clyde@sjsu.edu
 #SBATCH --mail-type=ALL
 
-conda activate galnet-gpu
-python cnn.py
+conda activate galnet
+PYTHONHASHSEED=0 python cnn.py

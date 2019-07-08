@@ -1,66 +1,185 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
+import argparse
+
+import numpy as np
 import pandas as pd
 
-from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ModelCheckpoint
+from keras.models import load_model
+from keras.preprocessing.image import ImageDataGenerator
+
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 
 from model import model_builder
 
+# top level hyperparameter definitions
 INPUT_DIM = (69, 69)
 DATA_FORMAT = 'channels_last'
 BATCH_SIZE = 256
 
 
-def main():
-    gz2 = pd.read_hdf('../data/gz2.h5')
+def main(argv):
+    # safely create output directory for our model/statistics
+    # we could also input a unique stamp here, if we want to keep
+    # multiple separate (but overall compatible) models
+    model_path = os.path.join(argv.DATA, 'model')
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
 
+    # import our dataset, which is a pandas dataframe containing path
+    # information to the actual image data
+    gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
+
+    # choose the questions we want to classify. note that the number
+    # of columns here should match the number of output layers in
+    # model.py
+    classcols = ['t01']
+
+    # split the data into a training set and a test set. the test set
+    # will be set aside entirely until the very end
     train, test = train_test_split(gz2, test_size=.25)
 
-    datagen = ImageDataGenerator(rotation_range=360, zoom_range=[.75, 1.3],
-                                 width_shift_range=.05, height_shift_range=.05,
-                                 horizontal_flip=True, vertical_flip=True,
-                                 validation_split=.25)
+    # if we only want to test, we need to do a lot less
+    if argv.TEST:
+        model = load_model(os.path.join(argv.DATA, 'model.h5'))
 
-    classcols = ['t01']
-    traingen = datagen.flow_from_dataframe(train,
-                                           directory='..',
-                                           x_col='imgpath',
-                                           y_col=classcols,
-                                           batchsize=BATCH_SIZE,
-                                           target_size=INPUT_DIM,
-                                           class_mode='multi_output',
-                                           subset='training')
+        testgen = ImageDataGenerator()
+        testgen = testgen.flow_from_dataframe(test,
+                                              directory=argv.DATA,
+                                              x_col='imgpath',
+                                              y_col=classcols,
+                                              batchsize=BATCH_SIZE,
+                                              target_size=INPUT_DIM,
+                                              class_mode='multi_output')
 
-    valgen = datagen.flow_from_dataframe(train,
-                                         directory='..',
-                                         x_col='imgpath',
-                                         y_col=classcols,
-                                         batchsize=BATCH_SIZE,
-                                         target_size=INPUT_DIM,
-                                         class_mode='multi_output',
-                                         subset='validation')
+        model.predict_generator(testgen)
 
-    model = model_builder(input_dim=traingen.image_shape)
+    elif argv.TRAIN:
+        # create an ImageDataGenerator, which applies random affine
+        # transformations to the data. such augmentation is standard
+        datagen = ImageDataGenerator(rotation_range=360, zoom_range=[.75, 1.3],
+                                     width_shift_range=.05,
+                                     height_shift_range=.05,
+                                     horizontal_flip=True, vertical_flip=True,
+                                     validation_split=.25)
 
-    TRAIN_STEP_SIZE = traingen.n // traingen.batch_size
-    VAL_STEP_SIZE = valgen.n // valgen.batch_size
-    print(TRAIN_STEP_SIZE)
-    print(VAL_STEP_SIZE)
+        # create two sets of generators, one for training data and one
+        # for validation data, which can be used to check progress
+        # throughout training. the target_size option automatically
+        # scales our data to the requested size. We also set up for a
+        # multi-output model, even though we are currently only
+        # checking one question, which will allow some flexibility
+        # should this goal change
+        traingen = datagen.flow_from_dataframe(train,
+                                               directory=argv.DATA,
+                                               x_col='imgpath',
+                                               y_col=classcols,
+                                               batchsize=BATCH_SIZE,
+                                               target_size=INPUT_DIM,
+                                               class_mode='multi_output',
+                                               subset='training')
 
-    ckpt = ModelCheckpoint('model.h5', monitor='val_loss', save_best_only=True)
+        valgen = datagen.flow_from_dataframe(train,
+                                             directory=argv.DATA,
+                                             x_col='imgpath',
+                                             y_col=classcols,
+                                             batchsize=BATCH_SIZE,
+                                             target_size=INPUT_DIM,
+                                             class_mode='multi_output',
+                                             subset='validation')
 
-    model.fit_generator(generator=traingen,
-                        steps_per_epoch=TRAIN_STEP_SIZE,
-                        validation_data=valgen,
-                        validation_steps=VAL_STEP_SIZE,
-                        epochs=10,
-                        callbacks=[ckpt],
-                        verbose=1)
+        # now we actually build the model, which is defined in model.py
+        model = model_builder(input_dim=traingen.image_shape, path=model_path)
+
+        # calculate the number of steps per epoch (or validation) such
+        # that all (or nearly all) images are used
+        TRAIN_STEP_SIZE = traingen.n // traingen.batch_size
+        VAL_STEP_SIZE = valgen.n // valgen.batch_size
+
+        # save the model after each epoch if it's an
+        # improvement over previous epochs
+        ckpt = ModelCheckpoint(model_path, monitor='val_loss',
+                               save_best_only=True)
+        history = model.fit_generator(generator=traingen,
+                                      steps_per_epoch=TRAIN_STEP_SIZE,
+                                      validation_data=valgen,
+                                      validation_steps=VAL_STEP_SIZE,
+                                      epochs=10,
+                                      callbacks=[ckpt],
+                                      verbose=1)
+
+        # XXX: the following graphs are only computed for the current
+        #      training session. This is ok until we decide to continue
+        #      training on a model, instead of starting fresh.
+
+        # Plot training & validation accuracy values
+        plt.plot(history.history['acc'])
+        plt.plot(history.history['val_acc'])
+        plt.title('Model accuracy')
+        plt.ylabel('Accuracy')
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(os.path.join(model_path, 'acc.pdf'))
+
+        # Plot training & validation loss values
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.legend(['Train', 'Test'], loc='upper left')
+        plt.savefig(os.path.join(model_path, 'val.pdf'))
+
+        # save all metrics
+        # XXX: will need to append history if we continue training a model
+        np.save(os.path.join(model_path, 'acc.npy'),
+                history.history['acc'])
+        np.save(os.path.join(model_path, 'val_acc.npy'),
+                history.history['val_acc'])
+        np.save(os.path.join(model_path, 'loss.npy'),
+                history.history['loss'])
+        np.save(os.path.join(model_path, 'val_loss.npy'),
+                history.history['val_loss'])
+
+        # test the model with the test set. it has never seen this data.
+        testgen = ImageDataGenerator()
+        testgen = testgen.flow_from_dataframe(test,
+                                              directory=argv.DATA,
+                                              x_col='imgpath',
+                                              y_col=classcols,
+                                              batchsize=BATCH_SIZE,
+                                              target_size=INPUT_DIM,
+                                              class_mode='multi_output')
+
+        model.predict_generator(testgen)
 
 
 if __name__ == '__main__':
-    main()
+    # set up an absolute path to make life easier
+    module_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                               '..'))
+
+    # set up plotting defaults
+    plt.rcParams.update({'font.size': 14,
+                         'figure.figsize': (12, 12)})
+
+    # set up command line options for use with hpc
+    PARSER = argparse.ArgumentParser(description="Run a CNN.")
+
+    # independent commands
+    PARSER.add_argument('-d', '--data', dest='DATA', action='store',
+                        default='data', help="Data folder.")
+    PARSER.DATA = os.path.join(module_path, PARSER.DATA)
+
+    # run mode. users must select either training or testing
+    MODE = PARSER.add_mutually_exclusive_group()
+    MODE.add_argument('--train', dest='TRAIN', action='store_true',
+                      default=False)
+    MODE.add_argument('--test', dest='TEST', action='store_true',
+                      default=False)
+    main(PARSER)
