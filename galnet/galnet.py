@@ -47,11 +47,11 @@ def main(argv):
 
     # if we only want to test, we need to do a lot less
     if argv.TEST:
-        model = load_model(os.path.join(argv.DATA, 'model.h5'))
+        model = load_model(os.path.join(model_path, 'model.h5'))
 
         testgen = ImageDataGenerator()
         testgen = testgen.flow_from_dataframe(test,
-                                              directory=argv.DATA,
+                                              directory=MODULE_PATH,
                                               x_col='imgpath',
                                               y_col=classcols,
                                               batchsize=BATCH_SIZE,
@@ -77,7 +77,7 @@ def main(argv):
         # checking one question, which will allow some flexibility
         # should this goal change
         traingen = datagen.flow_from_dataframe(train,
-                                               directory=argv.DATA,
+                                               directory=MODULE_PATH,
                                                x_col='imgpath',
                                                y_col=classcols,
                                                batchsize=BATCH_SIZE,
@@ -86,7 +86,7 @@ def main(argv):
                                                subset='training')
 
         valgen = datagen.flow_from_dataframe(train,
-                                             directory=argv.DATA,
+                                             directory=MODULE_PATH,
                                              x_col='imgpath',
                                              y_col=classcols,
                                              batchsize=BATCH_SIZE,
@@ -104,8 +104,8 @@ def main(argv):
 
         # save the model after each epoch if it's an
         # improvement over previous epochs
-        ckpt = ModelCheckpoint(model_path, monitor='val_loss',
-                               save_best_only=True)
+        ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
+                               monitor='val_loss', save_best_only=True)
         history = model.fit_generator(generator=traingen,
                                       steps_per_epoch=TRAIN_STEP_SIZE,
                                       validation_data=valgen,
@@ -150,7 +150,7 @@ def main(argv):
         # test the model with the test set. it has never seen this data.
         testgen = ImageDataGenerator()
         testgen = testgen.flow_from_dataframe(test,
-                                              directory=argv.DATA,
+                                              directory=MODULE_PATH,
                                               x_col='imgpath',
                                               y_col=classcols,
                                               batchsize=BATCH_SIZE,
@@ -162,7 +162,7 @@ def main(argv):
 
 if __name__ == '__main__':
     # set up an absolute path to make life easier
-    module_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+    MODULE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                '..'))
 
     # set up plotting defaults
@@ -185,5 +185,5 @@ if __name__ == '__main__':
                       default=False)
     
     argv = PARSER.parse_args()
-    argv.DATA = os.path.join(module_path, argv.DATA)
+    argv.DATA = os.path.join(MODULE_PATH, argv.DATA)
     main(argv)
