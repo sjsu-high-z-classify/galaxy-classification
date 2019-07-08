@@ -34,6 +34,7 @@ def main(argv):
     # import our dataset, which is a pandas dataframe containing path
     # information to the actual image data
     gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
+    print(gz2['imgpath'][0])
 
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     # independent commands
     PARSER.add_argument('-d', '--data', dest='DATA', action='store',
                         default='data', help="Data folder.")
-    PARSER.DATA = os.path.join(module_path, PARSER.DATA)
+    
 
     # run mode. users must select either training or testing
     MODE = PARSER.add_mutually_exclusive_group()
@@ -182,4 +183,7 @@ if __name__ == '__main__':
                       default=False)
     MODE.add_argument('--test', dest='TEST', action='store_true',
                       default=False)
-    main(PARSER)
+    
+    argv = PARSER.parse_args()
+    argv.DATA = os.path.join(module_path, argv.DATA)
+    main(argv)
