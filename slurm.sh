@@ -10,4 +10,4 @@
 #SBATCH --mail-type=ALL
 
 conda activate galnet
-PYTHONHASHSEED=0 python cnn.py
+PYTHONHASHSEED=0 python cnn.py --train
