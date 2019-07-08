@@ -52,7 +52,7 @@ def model_builder(input_dim, path=''):
 
     # save an image of the model as defined above. can be useful for
     # quickly checking that you have the architecture you want
-    plot_model(model, to_file=os.path.join(path, 'model.png'),
+    plot_model(model, to_file=os.path.join(path, 'model.pdf'),
                show_shapes=True, show_layer_names=True)
 
     return model
