@@ -37,7 +37,7 @@ def main(argv):
     # import our dataset, which is a pandas dataframe containing path
     # information to the actual image data
     gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
-    gz2 = gz2[gz2['a01'] >= .3]
+    gz2 = gz2[gz2['a01'] >= .3]  # we adopt the agreement threshold of DS18
 
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
@@ -202,6 +202,6 @@ if __name__ == '__main__':
     MODE.add_argument('--test', dest='TEST', action='store_true',
                       default=False)
 
-    argv = PARSER.parse_args()
-    argv.DATA = os.path.join(MODULE_PATH, argv.DATA)
-    main(argv)
+    args = PARSER.parse_args()
+    args.DATA = os.path.join(MODULE_PATH, args.DATA)
+    main(args)
