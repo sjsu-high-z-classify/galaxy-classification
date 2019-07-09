@@ -11,7 +11,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
 from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
-from keras.utils import multi_gpu_model, plot_model
+from keras.utils import multi_gpu_model, multi_gpu_utils, plot_model
 
 import matplotlib.pyplot as plt
 
@@ -119,7 +119,19 @@ def main(argv):
 
         # now we actually build the model, which is defined in model.py
         model = model_builder(input_dim=traingen.image_shape)
-        model = multi_gpu_model(model)
+
+        # set up for a multi-gpu model
+        # HACK: fixes an issue in keras where these don't play nice
+        #       with xla_gpus (which cause double counting of
+        #       available gpus). I plan to submit this fix on my own
+        #       time later (no stealies!)
+        available_devices = [multi_gpu_utils._normalize_device_name(name)
+                             for name
+                             in multi_gpu_utils._get_available_devices()]
+
+        # this line is our actual keras fix; it's the '/' that's key
+        n_gpus = len([x for x in available_devices if '/gpu' in x])
+        model = multi_gpu_model(model, gpus=n_gpus)
 
         # compile the model. note that the names of outputs in dicts
         # (e.g., 't01') should match the names of the relevant output
