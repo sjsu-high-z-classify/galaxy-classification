@@ -48,7 +48,7 @@ def main(argv):
     # import our dataset, which is a pandas dataframe containing path
     # information to the actual image data
     gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
-    gz2 = gz2[gz2['a01'] >= .3]  # we adopt the agreement threshold of DS18
+    gz2 = gz2[gz2['a01'] >= .3]  # adopt agreement threshold of DS18
 
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
@@ -74,7 +74,12 @@ def main(argv):
 
         test_step_size = testgen.n // testgen.batch_size
 
-        model.evaluate_generator(testgen, steps=test_step_size, verbose=1)
+        score = model.evaluate_generator(testgen,
+                                         steps=test_step_size,
+                                         verbose=1)
+        with open(os.path.join(model_path, 'test.results'), 'a') as f:
+            print("loss: {0:.4f}".format(score[0]), file=f)
+            print("acc: {0:.4f}".format(score[1]), file=f)
 
     elif argv.TRAIN:
         # create an ImageDataGenerator, which applies random affine
@@ -195,11 +200,17 @@ def main(argv):
 
         test_step_size = testgen.n // testgen.batch_size
 
-        model.evaluate_generator(testgen, steps=test_step_size, verbose=1)
+        score = model.evaluate_generator(testgen,
+                                         steps=test_step_size,
+                                         verbose=1)
+
+        with open(os.path.join(model_path, 'test.results'), 'a') as f:
+            print("loss: {0:.4f}".format(score[0]), file=f)
+            print("acc: {0:.4f}".format(score[1]), file=f)
 
 
 if __name__ == '__main__':
-    # set up an absolute path to make life easier
+    # set up an absolute path to the module to make life easier
     MODULE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                '..'))
 
