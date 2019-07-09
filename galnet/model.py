@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
-
-from keras.models import Model
 from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
-from keras.utils import plot_model
-
+from keras.models import Model
 
 DATA_FORMAT = 'channels_last'
 
-# configure as needed for your model
-LOSS = {'t01': 'categorical_crossentropy'}
-LOSS_WEIGHTS = {'t01': 1.}
 
-
-def model_builder(input_dim, path=''):
+def model_builder(input_dim):
     img_input = Input(shape=input_dim)
 
     cnn = Conv2D(filters=32, kernel_size=6,
@@ -44,15 +36,5 @@ def model_builder(input_dim, path=''):
     # t02_out = Dense(2, activation='softmax', name='t02')(t02)
 
     model = Model(inputs=img_input, outputs=[t01_out])
-
-    model.compile(optimizer='adam',
-                  loss=LOSS,
-                  loss_weights=LOSS_WEIGHTS,
-                  metrics=['accuracy'])
-
-    # save an image of the model as defined above. can be useful for
-    # quickly checking that you have the architecture you want
-    plot_model(model, to_file=os.path.join(path, 'model.png'),
-               show_shapes=True, show_layer_names=True)
 
     return model

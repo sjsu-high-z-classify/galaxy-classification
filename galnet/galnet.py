@@ -9,7 +9,9 @@ import pandas as pd
 
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
+from keras.optimizers import Adam
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import plot_model
 
 import matplotlib.pyplot as plt
 
@@ -21,6 +23,7 @@ from model import model_builder
 INPUT_DIM = (69, 69)
 DATA_FORMAT = 'channels_last'
 BATCH_SIZE = 256
+EPOCHS = 100
 
 
 def main(argv):
@@ -34,7 +37,7 @@ def main(argv):
     # import our dataset, which is a pandas dataframe containing path
     # information to the actual image data
     gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
-    print(gz2['imgpath'][0])
+    gz2 = gz2[gz2['a01'] >= .3]
 
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
@@ -95,22 +98,36 @@ def main(argv):
                                              subset='validation')
 
         # now we actually build the model, which is defined in model.py
-        model = model_builder(input_dim=traingen.image_shape, path=model_path)
+        model = model_builder(input_dim=traingen.image_shape)
+
+        # compile the model. note that the names of outputs in dicts
+        # (e.g., 't01') should match the names of the relevant output
+        # layers found in the model definition
+        model.compile(optimizer=Adam(lr=0.0001),  # DS18
+                      loss={'t01': 'categorical_crossentropy'},
+                      loss_weights={'t01': 1.},
+                      metrics=['accuracy'])
+
+        # save an image of the model as defined in model.py. can be
+        # useful for quickly checking that you have the architecture
+        # you want
+        plot_model(model, to_file=os.path.join(model_path, 'model.png'),
+                   show_shapes=True, show_layer_names=True)
 
         # calculate the number of steps per epoch (or validation) such
         # that all (or nearly all) images are used
-        TRAIN_STEP_SIZE = traingen.n // traingen.batch_size
-        VAL_STEP_SIZE = valgen.n // valgen.batch_size
+        train_step_size = traingen.n // traingen.batch_size
+        val_step_size = valgen.n // valgen.batch_size
 
         # save the model after each epoch if it's an
         # improvement over previous epochs
         ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
                                monitor='val_loss', save_best_only=True)
         history = model.fit_generator(generator=traingen,
-                                      steps_per_epoch=TRAIN_STEP_SIZE,
+                                      steps_per_epoch=train_step_size,
                                       validation_data=valgen,
-                                      validation_steps=VAL_STEP_SIZE,
-                                      epochs=10,
+                                      validation_steps=val_step_size,
+                                      epochs=EPOCHS,
                                       callbacks=[ckpt],
                                       verbose=1)
 
@@ -157,7 +174,9 @@ def main(argv):
                                               target_size=INPUT_DIM,
                                               class_mode='multi_output')
 
-        model.predict_generator(testgen)
+        test_step_size = testgen.n // testgen.batch_size
+
+        model.predict_generator(testgen, steps=test_step_size, verbose=1)
 
 
 if __name__ == '__main__':
@@ -175,7 +194,6 @@ if __name__ == '__main__':
     # independent commands
     PARSER.add_argument('-d', '--data', dest='DATA', action='store',
                         default='data', help="Data folder.")
-    
 
     # run mode. users must select either training or testing
     MODE = PARSER.add_mutually_exclusive_group()
@@ -183,7 +201,7 @@ if __name__ == '__main__':
                       default=False)
     MODE.add_argument('--test', dest='TEST', action='store_true',
                       default=False)
-    
+
     argv = PARSER.parse_args()
     argv.DATA = os.path.join(MODULE_PATH, argv.DATA)
     main(argv)
