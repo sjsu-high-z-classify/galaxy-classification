@@ -72,7 +72,9 @@ def main(argv):
                                               target_size=INPUT_DIM,
                                               class_mode='multi_output')
 
-        model.predict_generator(testgen)
+        test_step_size = testgen.n // testgen.batch_size
+
+        model.predict_generator(testgen, steps=test_step_size, verbose=1)
 
     elif argv.TRAIN:
         # create an ImageDataGenerator, which applies random affine
