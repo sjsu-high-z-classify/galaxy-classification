@@ -20,12 +20,12 @@ def model_builder(input_dim, path=''):
                  data_format=DATA_FORMAT, activation='relu')(img_input)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
     cnn = Conv2D(filters=64, kernel_size=5,
-                 data_format=DATA_FORMAT, activation='relu')(img_input)
+                 data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
     cnn = Conv2D(filters=128, kernel_size=3,
-                 data_format=DATA_FORMAT, activation='relu')(img_input)
+                 data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = Conv2D(filters=128, kernel_size=3,
-                 data_format=DATA_FORMAT, activation='relu')(img_input)
+                 data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
 
     flat = Flatten(data_format=DATA_FORMAT)(cnn)
@@ -52,7 +52,7 @@ def model_builder(input_dim, path=''):
 
     # save an image of the model as defined above. can be useful for
     # quickly checking that you have the architecture you want
-    plot_model(model, to_file=os.path.join(path, 'model.pdf'),
+    plot_model(model, to_file=os.path.join(path, 'model.png'),
                show_shapes=True, show_layer_names=True)
 
     return model
