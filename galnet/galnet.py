@@ -34,7 +34,7 @@ def main(argv):
     # import our dataset, which is a pandas dataframe containing path
     # information to the actual image data
     gz2 = pd.read_hdf(os.path.join(argv.DATA, 'gz2.h5'))
-    print(gz2['imgpath'][0])
+    gz2 = gz2[gz2['a01'] >= .3]  # we adopt the agreement threshold of DS18
 
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
