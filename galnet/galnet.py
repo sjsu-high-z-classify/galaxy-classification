@@ -9,7 +9,7 @@ import pandas as pd
 
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
-from keras.optimizers import Adam
+from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import plot_model
 
@@ -123,7 +123,7 @@ def main(argv):
         # compile the model. note that the names of outputs in dicts
         # (e.g., 't01') should match the names of the relevant output
         # layers found in the model definition
-        model.compile(optimizer=Adam(lr=0.0001),  # DS18
+        model.compile(optimizer=Nadam(lr=0.0001),
                       loss={'t01': 'categorical_crossentropy'},
                       loss_weights={'t01': 1.},
                       metrics=['accuracy', 'loss'])
