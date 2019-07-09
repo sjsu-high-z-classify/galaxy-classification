@@ -126,7 +126,7 @@ def main(argv):
         model.compile(optimizer=Nadam(lr=0.0001),
                       loss={'t01': 'categorical_crossentropy'},
                       loss_weights={'t01': 1.},
-                      metrics=['accuracy', 'loss'])
+                      metrics=['accuracy'])
 
         # save an image of the model as defined in model.py. can be
         # useful for quickly checking that you have the architecture
