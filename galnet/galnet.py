@@ -74,15 +74,17 @@ def main(argv):
 
         test_step_size = testgen.n // testgen.batch_size
 
-        model.predict_generator(testgen, steps=test_step_size, verbose=1)
+        model.evaluate_generator(testgen, steps=test_step_size, verbose=1)
 
     elif argv.TRAIN:
         # create an ImageDataGenerator, which applies random affine
         # transformations to the data. such augmentation is standard
-        datagen = ImageDataGenerator(rotation_range=360, zoom_range=[.75, 1.3],
+        datagen = ImageDataGenerator(rotation_range=360,
+                                     zoom_range=[.75, 1.3],
                                      width_shift_range=.05,
                                      height_shift_range=.05,
-                                     horizontal_flip=True, vertical_flip=True,
+                                     horizontal_flip=True,
+                                     vertical_flip=True,
                                      validation_split=.25)
 
         # create two sets of generators, one for training data and one
@@ -193,7 +195,7 @@ def main(argv):
 
         test_step_size = testgen.n // testgen.batch_size
 
-        model.predict_generator(testgen, steps=test_step_size, verbose=1)
+        model.evaluate_generator(testgen, steps=test_step_size, verbose=1)
 
 
 if __name__ == '__main__':
