@@ -126,7 +126,7 @@ def main(argv):
         model.compile(optimizer=Adam(lr=0.0001),  # DS18
                       loss={'t01': 'categorical_crossentropy'},
                       loss_weights={'t01': 1.},
-                      metrics=['accuracy'])
+                      metrics=['accuracy', 'loss'])
 
         # save an image of the model as defined in model.py. can be
         # useful for quickly checking that you have the architecture
@@ -142,7 +142,7 @@ def main(argv):
         # save the model after each epoch if it's an
         # improvement over previous epochs
         ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
-                               monitor='val_loss', save_best_only=True)
+                               monitor='val_acc', save_best_only=True)
         history = model.fit_generator(generator=traingen,
                                       steps_per_epoch=train_step_size,
                                       validation_data=valgen,
@@ -174,7 +174,7 @@ def main(argv):
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Test'], loc='upper left')
-        plt.savefig(os.path.join(model_path, 'val.png'))
+        plt.savefig(os.path.join(model_path, 'loss.png'))
         plt.close()
 
         # save all metrics
