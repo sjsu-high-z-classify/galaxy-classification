@@ -131,7 +131,9 @@ def main(argv):
 
         # this line is our actual keras fix; it's the '/' that's key
         n_gpus = len([x for x in available_devices if '/gpu' in x])
-        model = multi_gpu_model(model, gpus=n_gpus)
+
+        if n_gpus > 1:  # only use multi_gpu if we have multiple gpus
+            model = multi_gpu_model(model, gpus=n_gpus)
 
         # compile the model. note that the names of outputs in dicts
         # (e.g., 't01') should match the names of the relevant output
