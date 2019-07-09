@@ -27,6 +27,17 @@ EPOCHS = 100
 
 
 def main(argv):
+    """The main function.
+
+    The main function, which handles user input and common tasks when
+    running galnet.
+
+    Parameters
+    ----------
+    argv : :obj:`argparse.Namespace`
+        Runtime options set from the terminal.
+
+    """
     # safely create output directory for our model/statistics
     # we could also input a unique stamp here, if we want to keep
     # multiple separate (but overall compatible) models
@@ -136,22 +147,26 @@ def main(argv):
         #      training on a model, instead of starting fresh.
 
         # Plot training & validation accuracy values
+        plt.figure()
         plt.plot(history.history['acc'])
         plt.plot(history.history['val_acc'])
         plt.title('Model accuracy')
         plt.ylabel('Accuracy')
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Test'], loc='upper left')
-        plt.savefig(os.path.join(model_path, 'acc.pdf'))
+        plt.savefig(os.path.join(model_path, 'acc.png'))
+        plt.close()
 
         # Plot training & validation loss values
+        plt.figure()
         plt.plot(history.history['loss'])
         plt.plot(history.history['val_loss'])
         plt.title('Model loss')
         plt.ylabel('Loss')
         plt.xlabel('Epoch')
         plt.legend(['Train', 'Test'], loc='upper left')
-        plt.savefig(os.path.join(model_path, 'val.pdf'))
+        plt.savefig(os.path.join(model_path, 'val.png'))
+        plt.close()
 
         # save all metrics
         # XXX: will need to append history if we continue training a model
