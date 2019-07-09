@@ -11,7 +11,7 @@ from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
 from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
-from keras.utils import plot_model
+from keras.utils import multi_gpu_model, plot_model
 
 import matplotlib.pyplot as plt
 
@@ -41,7 +41,7 @@ def main(argv):
     # safely create output directory for our model/statistics
     # we could also input a unique stamp here, if we want to keep
     # multiple separate (but overall compatible) models
-    model_path = os.path.join(argv.DATA, 'model')
+    model_path = os.path.join(argv.DATA, argv.MODEL)
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
@@ -119,6 +119,7 @@ def main(argv):
 
         # now we actually build the model, which is defined in model.py
         model = model_builder(input_dim=traingen.image_shape)
+        model = multi_gpu_model(model)
 
         # compile the model. note that the names of outputs in dicts
         # (e.g., 't01') should match the names of the relevant output
@@ -224,6 +225,9 @@ if __name__ == '__main__':
     # independent commands
     PARSER.add_argument('-d', '--data', dest='DATA', action='store',
                         default='data', help="Data folder.")
+    PARSER.add_argument('-m', '--model', dest='MODEL', action='store',
+                        default='model', help="Location (folder) inside data "
+                        "to save model")
 
     # run mode. users must select either training or testing
     MODE = PARSER.add_mutually_exclusive_group()
