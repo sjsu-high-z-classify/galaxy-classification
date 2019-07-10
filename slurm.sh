@@ -1,13 +1,12 @@
 #!/bin/sh
 #SBATCH --partition=gpus
-#SBATCH --nodes=1                                 # Nodes requested
-#SBATCH --gres=gpu
-#SBATCH --job-name=galnet
-#SBATCH --output=galnet.out                    # send stdout to outfile
-#SBATCH --error=galnet.err                     # send stderr to errfile
-#SBATCH --time=10-00:00:00                            # time requested in day-hour:minute:second
+#SBATCH --gres=gpu:2
+#SBATCH --job-name=gpunet
+#SBATCH --output=gpunet.out
+#SBATCH --error=gpunet.err
+#SBATCH --time=10-00:00:00
 #SBATCH --mail-user=james.casey-clyde@sjsu.edu
 #SBATCH --mail-type=ALL
 
 conda activate galnet
-PYTHONHASHSEED=0 python galnet/galnet.py --train
+PYTHONHASHSEED=0 python galnet/galnet.py --train --model gpu-model
