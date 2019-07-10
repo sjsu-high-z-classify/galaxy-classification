@@ -3,6 +3,7 @@
 
 import os
 import argparse
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -190,7 +191,10 @@ def main(argv):
     # safely create output directory for our model/statistics
     # we could also input a unique stamp here, if we want to keep
     # multiple separate (but overall compatible) models
-    model_path = os.path.join(argv.DATA, argv.MODEL)
+    if argv.TRAIN:
+        model_path = os.path.join(argv.DATA, argv.MODEL, uuid.uuid4())
+    elif argv.TEST:
+        model_path = os.path.join(argv.DATA, argv.MODEL)
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 
