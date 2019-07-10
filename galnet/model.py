@@ -24,17 +24,16 @@ def model_builder(input_dim):
     """
     img_input = Input(shape=input_dim)
 
-    cnn = Conv2D(filters=32, kernel_size=6,
+    cnn = Conv2D(filters=32, kernel_size=6, padding='same',
                  data_format=DATA_FORMAT, activation='relu')(img_input)
-    cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
-    cnn = Conv2D(filters=64, kernel_size=5,
+    cnn = Conv2D(filters=64, kernel_size=5, padding='same',
                  data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
-    cnn = Conv2D(filters=128, kernel_size=3,
-                 data_format=DATA_FORMAT, activation='relu')(cnn)
-    cnn = Conv2D(filters=128, kernel_size=3,
+    cnn = Conv2D(filters=128, kernel_size=2, padding='same',
                  data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
+    cnn = Conv2D(filters=128, kernel_size=3, padding='same',
+                 data_format=DATA_FORMAT, activation='relu')(cnn)
 
     flat = Flatten(data_format=DATA_FORMAT)(cnn)
     flat = Dropout(.5)(flat)
