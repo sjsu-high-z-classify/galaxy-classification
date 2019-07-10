@@ -218,8 +218,8 @@ def main(argv):
         score = test(test, model, class_cols, model_path)
 
     elif argv.TRAIN:
-        model = train(train, class_cols, model_path)
-        score = test(test, model, class_cols, model_path)
+        model = train_model(train, class_cols, model_path)
+        score = test_model(test, model, class_cols, model_path)
 
     return score
 
