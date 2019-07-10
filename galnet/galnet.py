@@ -192,7 +192,7 @@ def main(argv):
     # we could also input a unique stamp here, if we want to keep
     # multiple separate (but overall compatible) models
     if argv.TRAIN:
-        model_path = os.path.join(argv.DATA, argv.MODEL, uuid.uuid4())
+        model_path = os.path.join(argv.DATA, argv.MODEL, str(uuid.uuid4()))
     elif argv.TEST:
         model_path = os.path.join(argv.DATA, argv.MODEL)
     if not os.path.exists(model_path):
