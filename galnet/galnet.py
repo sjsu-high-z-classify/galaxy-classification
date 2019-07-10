@@ -87,6 +87,12 @@ def train_model(data, class_cols, model_path):
     # now we actually build the model, which is defined in model.py
     model = model_builder(input_dim=traingen.image_shape)
 
+    # save an image of the model as defined in model.py. can be useful
+    # for quickly checking that you have the architecture you want.
+    # note that this has to happen before we distribute over gpu.
+    plot_model(model, to_file=os.path.join(model_path, 'model.png'),
+               show_shapes=True, show_layer_names=True)
+
     # set up for a multi-gpu model
     # HACK: fixes an issue in keras where these don't play nice with
     #       xla_gpus (which cause double counting of available gpus).
@@ -108,11 +114,6 @@ def train_model(data, class_cols, model_path):
                   loss={'t01': 'categorical_crossentropy'},
                   loss_weights={'t01': 1.},
                   metrics=['accuracy'])
-
-    # save an image of the model as defined in model.py. can be useful
-    # for quickly checking that you have the architecture you want
-    plot_model(model, to_file=os.path.join(model_path, 'model.png'),
-               show_shapes=True, show_layer_names=True)
 
     # calculate the number of steps per epoch (or validation) such that
     # all (or nearly all) images are used
