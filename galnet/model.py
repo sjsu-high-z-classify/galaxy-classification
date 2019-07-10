@@ -6,6 +6,22 @@ DATA_FORMAT = 'channels_last'
 
 
 def model_builder(input_dim):
+    """Builds a model.
+
+    Builds and returns a deep learning model for use in galactic image
+    processing applications.
+
+    Parameters
+    ----------
+    input_dim : tuple of int
+        Tuple specifying the dimensions of the image input
+
+    Returns
+    -------
+    model : :obj:`keras.models.Model`
+        The model defined in this file.
+
+    """
     img_input = Input(shape=input_dim)
 
     cnn = Conv2D(filters=32, kernel_size=6,
