@@ -14,17 +14,59 @@ from PIL import Image
 from tqdm import tqdm
 
 CATALOG = None
-TOKEN = None
 
 
-def _authenticate():
-    global TOKEN
-    global PARSER
-    TOKEN = Authentication.login(PARSER.USERNAME, PARSER.PASSWORD)
-    return TOKEN
+def _authenticate(username, password):
+    """Authenticates with SciServer
+
+    Authenticates user with SciServer using the provided username and
+    password.
+
+    Parameters
+    ----------
+    username : str
+        SciServer username.
+    password : str
+        SciServer password.
+
+    Returns
+    -------
+    token : str
+        Authentication token from SciServer
+
+    """
+    return Authentication.login(username, password)
 
 
 def _entropy(p_i):
+    """Sample entropy
+
+    Calculates the classification entropy for a given object [1]_[2]_.
+
+    Parameters
+    ----------
+    p_i : list of float
+        List containing the probabilities for each classification.
+        Probabilities should be bound between [0, 1].
+
+    Returns
+    -------
+    float
+        Classification entropy.
+
+    References
+    ----------
+    .. [1] S. Dieleman, K. W. Willett, and J. Dambre,
+       “Rotation-invariant convolutional neural networks for galaxy
+       morphology prediction,” Monthly Notices of the Royal
+       Astronomical Society, vol. 450, no. 2, p. 1441, Jun. 2015.
+
+    .. [2] H. Domínguez Sánchez, M. Huertas-Company, M. Bernardi,
+       D. Tuccillo, and J. L. Fischer, “Improving galaxy morphologies
+       for SDSS with Deep Learning,” Monthly Notices of the Royal
+       Astronomical Society, vol. 476, no. 3, p. 3661, May 2018.
+
+    """
     logp_i = np.log(p_i)
     logp_i[logp_i == -np.inf] = 1.
     return -np.sum(p_i * logp_i)
@@ -33,8 +75,30 @@ def _entropy(p_i):
 def agreement(row):
     """Calculates GZ2 agreement.
 
-    Quantifies the level of agreement voters had on each question for a
-    GalaxyZoo2 galaxy.
+    Quantifies the level of agreement [1]_[2]_ voters had on each question
+    for a GalaxyZoo2 galaxy.
+
+    Parameters
+    ----------
+    row : :obj:`pandas.core.series.Series`
+        The row containing the GZ2 entry.
+
+    Returns
+    -------
+    tuple of float
+        The agreements for each of the 11 questions asked in GZ2.
+
+    References
+    ----------
+    .. [1] S. Dieleman, K. W. Willett, and J. Dambre,
+       “Rotation-invariant convolutional neural networks for galaxy
+       morphology prediction,” Monthly Notices of the Royal
+       Astronomical Society, vol. 450, no. 2, p. 1441, Jun. 2015.
+
+    .. [2] H. Domínguez Sánchez, M. Huertas-Company, M. Bernardi,
+       D. Tuccillo, and J. L. Fischer, “Improving galaxy morphologies
+       for SDSS with Deep Learning,” Monthly Notices of the Royal
+       Astronomical Society, vol. 476, no. 3, p. 3661, May 2018.
 
     """
     t01 = np.array([row['t01a01'], row['t01a02'], row['t01a03']])
@@ -118,7 +182,6 @@ def crop_images(df, w, h):
             im = im.crop(box=(left, upper, right, lower))
             im.save(path)
             pbar.update()
-    return
 
 
 def get_catalog():
@@ -128,9 +191,6 @@ def get_catalog():
     catalog, as well as weighted fraction task answers for each object.
 
     """
-    if TOKEN is None:
-        _authenticate()
-
     sql = 'SELECT gz2.specobjid, gz2.ra, gz2.dec, dr7.petroR90_r, ' \
           'gz2.t01_smooth_or_features_a01_smooth_weighted_fraction' \
           ' AS t01a01, ' \
@@ -261,6 +321,18 @@ def build(data_path='data', image_path='img', catalog_name='gz2'):
 
     Parameters
     ----------
+    data_path : str
+        Path to save catalog and image data in.
+
+    image_path : str
+        Path inside the `data_path` to save images.
+
+    catalog_name : str
+        What to name the catalog. All catalogs are h5 archives.
+
+    Returns
+    -------
+    :obj:`pandas.core.frame.DataFrame`
 
     """
     # create relevant paths
@@ -276,7 +348,7 @@ def build(data_path='data', image_path='img', catalog_name='gz2'):
     df.to_hdf(catalog_path, key='gz2', append=False, mode='w')
 
     # get the images we want from SDSS
-    df = get_images(gz2, data_dir=data_path, img_dir=img_path,
+    df = get_images(df, data_dir=data_path, img_dir=img_path,
                     catalog_name=catalog_name)
     df.to_hdf(catalog_path, key='gz2', append=False, mode='w')
     return df
@@ -289,30 +361,44 @@ def process(df, data_path='data', catalog_name='gz2'):
     (df['a01'], df['a02'], df['a03'],
      df['a04'], df['a05'], df['a06'],
      df['a07'], df['a08'], df['a09'],
-     df['a10'], df['a11']) = zip(*df.apply(lambda row: agreement(row),
-                                           axis=1))
+     df['a10'], df['a11']) = zip(*df.apply(agreement, axis=1))
     df.to_hdf(catalog_path, key=catalog_name, append=False, mode='w')
 
     # onehot encode classifications
     (df['t01'], df['t02'], df['t03'],
      df['t04'], df['t05'], df['t06'],
      df['t07'], df['t08'], df['t09'],
-     df['t10'], df['t11']) = zip(*df.apply(lambda row: one_hot_encoder(row),
-                                           axis=1))
+     df['t10'], df['t11']) = zip(*df.apply(one_hot_encoder, axis=1))
     df.to_hdf(catalog_path, key=catalog_name, append=False, mode='w')
     return df
 
 
+def main(argv):
+    _authenticate(argv.USERNAME, argv.PASSWORD)
+    df = build(data_path=argv.DATA, image_path=argv.IMG,
+               catalog_name=argv.CATALOG)
+    process(df)
+
+
 if __name__ == '__main__':
+    # set up terminal arguments
     PARSER = argparse.ArgumentParser(description="Build a catalogue "
                                      "of GZ2 images.")
-#    PARSER.add_argument('-u', '--username', dest='USERNAME',
-#                        help='SciServer username', default='', action='store',
-#                        type=str, required=True)
-#    PARSER.add_argument('-p', '--password', dest='PASSWORD',
-#                        help='SciServer password',  default='', action='store',
-#                        type=str, required=True)
 
-    gz2 = pd.read_hdf('../data/gz2.h5')
-    gz2 = process(gz2, data_path='../data')
-    print("Processed successfully.")
+    # authentication arguments
+    PARSER.add_argument('-u', '--username', dest='USERNAME',
+                        help='SciServer username', default='', action='store',
+                        type=str, required=True)
+    PARSER.add_argument('-p', '--password', dest='PASSWORD',
+                        help='SciServer password', default='', action='store',
+                        type=str, required=True)
+
+    # path options
+    PARSER.add_argument('-d', '--data', dest='DATA', action='store',
+                        default='data', help="Data folder.")
+    PARSER.add_argument('-i', '--img', dest='IMG', action='store',
+                        default='img', help="Image folder (in data folder).")
+    PARSER.add_argument('-c', '--catalog', dest='CATALOG', action='store',
+                        default='gz2', help="Catalog name.")
+
+    main(PARSER.parse_args())
