@@ -179,17 +179,6 @@ def train_model(data, class_cols, model_path):
     plt.savefig(os.path.join(model_path, 'loss.png'))
     plt.close()
 
-    # save all metrics
-    # XXX: will need to append history if we continue training a model
-    np.save(os.path.join(model_path, 'acc.npy'),
-            history.history['acc'])
-    np.save(os.path.join(model_path, 'val_acc.npy'),
-            history.history['val_acc'])
-    np.save(os.path.join(model_path, 'loss.npy'),
-            history.history['loss'])
-    np.save(os.path.join(model_path, 'val_loss.npy'),
-            history.history['val_loss'])
-
     return model
 
 
