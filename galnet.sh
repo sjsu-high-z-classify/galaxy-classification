@@ -4,6 +4,7 @@
 #SBATCH --job-name=gpunet
 #SBATCH --output=galnet.out
 #SBATCH --error=galnet.err
+
 #SBATCH --time=10-00:00:00
 #SBATCH --mail-user=james.casey-clyde@sjsu.edu
 #SBATCH --mail-type=ALL
