@@ -40,7 +40,7 @@ from model import model_builder
 INPUT_DIM = (69, 69)
 DATA_FORMAT = 'channels_last'
 BATCH_SIZE = 256
-EPOCHS = 1000
+EPOCHS = 200
 
 
 def test_model(data, model, class_cols, model_path):
