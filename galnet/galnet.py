@@ -1,6 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# GalNet is DNN built for galaxy classification with GZ2.
+# Copyright (C) 2018-2019  J. Andrew Casey-Clyde and Jean Donet.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import argparse
 import uuid
@@ -8,7 +24,7 @@ import uuid
 import numpy as np
 import pandas as pd
 
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 from keras.models import load_model
 from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
@@ -120,16 +136,22 @@ def train_model(data, class_cols, model_path):
     train_step_size = traingen.n // traingen.batch_size
     val_step_size = valgen.n // valgen.batch_size
 
-    # save the model after each epoch if it's an improvement over
-    # previous epochs
-    ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
-                           monitor='val_acc', save_best_only=True)
+    # set up callbacks for saving and logging
+    checkpoint = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
+                                 monitor='val_acc', save_best_only=True)
+    csv_logger = CSVLogger(os.path.join(model_path, 'training.log'))
+    lr_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                                   patience=10, min_lr=0.)
+
+    # train the model
     history = model.fit_generator(generator=traingen,
                                   steps_per_epoch=train_step_size,
                                   validation_data=valgen,
                                   validation_steps=val_step_size,
                                   epochs=EPOCHS,
-                                  callbacks=[ckpt],
+                                  callbacks=[checkpoint,
+                                             csv_logger,
+                                             lr_plateau],
                                   verbose=1)
 
     # XXX: the following graphs are only computed for the current
@@ -157,17 +179,6 @@ def train_model(data, class_cols, model_path):
     plt.legend(['Train', 'Test'], loc='upper left')
     plt.savefig(os.path.join(model_path, 'loss.png'))
     plt.close()
-
-    # save all metrics
-    # XXX: will need to append history if we continue training a model
-    np.save(os.path.join(model_path, 'acc.npy'),
-            history.history['acc'])
-    np.save(os.path.join(model_path, 'val_acc.npy'),
-            history.history['val_acc'])
-    np.save(os.path.join(model_path, 'loss.npy'),
-            history.history['loss'])
-    np.save(os.path.join(model_path, 'val_loss.npy'),
-            history.history['val_loss'])
 
     return model
 
