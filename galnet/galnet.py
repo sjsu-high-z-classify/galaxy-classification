@@ -21,10 +21,10 @@ import os
 import argparse
 import uuid
 
-import numpy as np
 import pandas as pd
 
-from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import (CSVLogger, EarlyStopping,
+                             ModelCheckpoint, ReduceLROnPlateau)
 from keras.models import load_model
 from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
@@ -137,11 +137,16 @@ def train_model(data, class_cols, model_path):
     val_step_size = valgen.n // valgen.batch_size
 
     # set up callbacks for saving and logging
+    # XXX: will need to append history if we continue training a model
+    monitor = 'val_loss'  # should monitor the same quanitity for all
+    base_patience = 10  # ensure we try LR reduction a few times before stop
+
     checkpoint = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
-                                 monitor='val_acc', save_best_only=True)
+                                 monitor=monitor, save_best_only=True)
     csv_logger = CSVLogger(os.path.join(model_path, 'training.log'))
-    lr_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
-                                   patience=10, min_lr=0.)
+    lr_plateau = ReduceLROnPlateau(monitor=monitor, factor=0.1,
+                                   patience=base_patience, min_lr=0.)
+    stop = EarlyStopping(monitor=monitor, patience=5*base_patience)
 
     # train the model
     history = model.fit_generator(generator=traingen,
@@ -151,7 +156,8 @@ def train_model(data, class_cols, model_path):
                                   epochs=EPOCHS,
                                   callbacks=[checkpoint,
                                              csv_logger,
-                                             lr_plateau],
+                                             lr_plateau,
+                                             stop],
                                   verbose=1)
 
     # XXX: the following graphs are only computed for the current
