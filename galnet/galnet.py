@@ -24,7 +24,7 @@ import uuid
 import numpy as np
 import pandas as pd
 
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import CSVLogger, ModelCheckpoint, ReduceLROnPlateau
 from keras.models import load_model
 from keras.optimizers import Nadam
 from keras.preprocessing.image import ImageDataGenerator
@@ -135,16 +135,22 @@ def train_model(data, class_cols, model_path):
     train_step_size = traingen.n // traingen.batch_size
     val_step_size = valgen.n // valgen.batch_size
 
-    # save the model after each epoch if it's an improvement over
-    # previous epochs
-    ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
-                           monitor='val_acc', save_best_only=True)
+    # set up callbacks for saving and logging
+    checkpoint = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
+                                 monitor='val_acc', save_best_only=True)
+    csv_logger = CSVLogger(os.path.join(model_path, 'training.log'))
+    lr_plateau = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                                   patience=10, min_lr=0.)
+
+    # train the model
     history = model.fit_generator(generator=traingen,
                                   steps_per_epoch=train_step_size,
                                   validation_data=valgen,
                                   validation_steps=val_step_size,
                                   epochs=EPOCHS,
-                                  callbacks=[ckpt],
+                                  callbacks=[checkpoint,
+                                             csv_logger,
+                                             lr_plateau],
                                   verbose=1)
 
     # XXX: the following graphs are only computed for the current
