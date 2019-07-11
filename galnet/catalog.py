@@ -3,15 +3,10 @@
 
 import os
 import argparse
-
 import numpy as np
-import pandas as pd
-
-from SciServer import SkyServer, Authentication
-
 from PIL import Image
-
 from tqdm import tqdm
+from SciServer import SkyServer, Authentication
 
 CATALOG = None
 
@@ -38,7 +33,7 @@ def _authenticate(username, password):
     return Authentication.login(username, password)
 
 
-def _entropy(p_i):
+def entropy(p_i):
     """Sample entropy
 
     Calculates the classification entropy for a given object [1]_[2]_.
@@ -72,8 +67,8 @@ def _entropy(p_i):
     return -np.sum(p_i * logp_i)
 
 
-def agreement(row):
-    """Calculates GZ2 agreement.
+def agreement(probs):
+    """Calculates GZ2 agreement for sample.
 
     Quantifies the level of agreement [1]_[2]_ voters had on each question
     for a GalaxyZoo2 galaxy.
@@ -101,6 +96,10 @@ def agreement(row):
        Astronomical Society, vol. 476, no. 3, p. 3661, May 2018.
 
     """
+    return 1 - entropy(probs) / np.log(len(probs))
+
+
+def sample_agreement(row):
     t01 = np.array([row['t01a01'], row['t01a02'], row['t01a03']])
     t02 = np.array([row['t02a04'], row['t02a05']])
     t03 = np.array([row['t03a06'], row['t03a07']])
@@ -115,17 +114,10 @@ def agreement(row):
     t10 = np.array([row['t10a28'], row['t10a29'], row['t10a30']])
     t11 = np.array([row['t11a31'], row['t11a32'], row['t11a33'], row['t11a34'],
                     row['t11a36'], row['t11a37']])
-    return (1 - _entropy(t01) / np.log(len(t01)),
-            1 - _entropy(t02) / np.log(len(t02)),
-            1 - _entropy(t03) / np.log(len(t03)),
-            1 - _entropy(t04) / np.log(len(t04)),
-            1 - _entropy(t05) / np.log(len(t05)),
-            1 - _entropy(t06) / np.log(len(t06)),
-            1 - _entropy(t07) / np.log(len(t07)),
-            1 - _entropy(t08) / np.log(len(t08)),
-            1 - _entropy(t09) / np.log(len(t09)),
-            1 - _entropy(t10) / np.log(len(t10)),
-            1 - _entropy(t11) / np.log(len(t11)))
+
+    return (agreement(t01), agreement(t02), agreement(t03), agreement(t04),
+            agreement(t05), agreement(t06), agreement(t07), agreement(t08),
+            agreement(t09), agreement(t10), agreement(t11))
 
 
 def one_hot_encoder(row):
@@ -272,8 +264,7 @@ def get_catalog():
     return SkyServer.sqlSearch(sql=sql, dataRelease='DR15')
 
 
-def get_images(df, w=424, h=424, scale=.02,
-               data_dir='data', img_dir='img', catalog_name='gz2'):
+def get_images(df, width=424, height=424, scale=.02):
     """Get images for objects present in pandas dataframe.
 
     Downloads JPEG images of objects from SDSS to disk storage, naming
@@ -282,7 +273,7 @@ def get_images(df, w=424, h=424, scale=.02,
     be used with :class:`keras.preprocessing.image.ImageDataGenerator`
 
     """
-    catalog_path = os.path.join(data_dir, catalog_name + '.h5')
+    catalog_path = os.path.join(ARGS.DATA, ARGS.CATALOG + '.h5')
     df = df.assign(imgpath=None)
     with tqdm(total=len(df.index), unit='object') as pbar:
         for index, obj in df.iterrows():
@@ -296,16 +287,16 @@ def get_images(df, w=424, h=424, scale=.02,
             img = None
             img = SkyServer.getJpegImgCutout(ra=obj['ra'],
                                              dec=obj['dec'],
-                                             width=w, height=h,
+                                             width=width, height=height,
                                              scale=(scale * obj['petroR90_r']),
                                              dataRelease='DR15')
 
             if img is not None:
-                imgpath = os.path.join(img_dir,
+                imgpath = os.path.join(ARGS.IMG,
                                        '{0}.jpeg'.format(obj['specobjid']))
                 Image.fromarray(img).save(imgpath)
                 df.at[index, 'imgpath'] = imgpath
-                df.to_hdf(catalog_path, key=catalog_name,
+                df.to_hdf(catalog_path, key=ARGS.CATALOG,
                           append=False, mode='w')
 
             pbar.update(1)
@@ -348,39 +339,45 @@ def build(data_path='data', image_path='img', catalog_name='gz2'):
     df.to_hdf(catalog_path, key='gz2', append=False, mode='w')
 
     # get the images we want from SDSS
-    df = get_images(df, data_dir=data_path, img_dir=img_path,
-                    catalog_name=catalog_name)
+    df = get_images(df)
     df.to_hdf(catalog_path, key='gz2', append=False, mode='w')
     return df
 
 
-def process(df, data_path='data', catalog_name='gz2'):
-    catalog_path = os.path.join(data_path, catalog_name + '.h5')
+def main():
+    catalog_path = os.path.join(ARGS.DATA, ARGS.CATALOG + '.h5')
 
-    # calculate the agreement for each question/sample
+    # first authenticate before we download a bunch of stuff
+    _authenticate(ARGS.USERNAME, ARGS.PASSWORD)
+
+    # download the object catalog
+    df = get_catalog()
+    df.to_hdf(catalog_path, key=ARGS.CATALOG, append=False, mode='w')
+
+    # download the images in the object catalog
+    df = get_images(df, width=424, height=424, scale=.02)
+    df.to_hdf(catalog_path, key=ARGS.CATALOG, append=False, mode='w')
+
+    # calculate statistics for the catalog
     (df['a01'], df['a02'], df['a03'],
      df['a04'], df['a05'], df['a06'],
      df['a07'], df['a08'], df['a09'],
-     df['a10'], df['a11']) = zip(*df.apply(agreement, axis=1))
-    df.to_hdf(catalog_path, key=catalog_name, append=False, mode='w')
+     df['a10'], df['a11']) = zip(*df.apply(sample_agreement, axis=1))
+    df.to_hdf(catalog_path, key=ARGS.CATALOG, append=False, mode='w')
 
     # onehot encode classifications
     (df['t01'], df['t02'], df['t03'],
      df['t04'], df['t05'], df['t06'],
      df['t07'], df['t08'], df['t09'],
      df['t10'], df['t11']) = zip(*df.apply(one_hot_encoder, axis=1))
-    df.to_hdf(catalog_path, key=catalog_name, append=False, mode='w')
-    return df
-
-
-def main(argv):
-    _authenticate(argv.USERNAME, argv.PASSWORD)
-    df = build(data_path=argv.DATA, image_path=argv.IMG,
-               catalog_name=argv.CATALOG)
-    process(df)
+    df.to_hdf(catalog_path, key=ARGS.CATALOG, append=False, mode='w')
 
 
 if __name__ == '__main__':
+    # set up an absolute path to the module to make life easier
+    MODULE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                               '..'))
+
     # set up terminal arguments
     PARSER = argparse.ArgumentParser(description="Build a catalogue "
                                      "of GZ2 images.")
@@ -393,12 +390,19 @@ if __name__ == '__main__':
                         help='SciServer password', default='', action='store',
                         type=str, required=True)
 
+    # catalog builder options
+    PARSER.add_argument('-c', '--catalog', dest='CATALOG', action='store',
+                        default='gz2', help="Catalog name.")
+
     # path options
     PARSER.add_argument('-d', '--data', dest='DATA', action='store',
                         default='data', help="Data folder.")
     PARSER.add_argument('-i', '--img', dest='IMG', action='store',
-                        default='img', help="Image folder (in data folder).")
+                        default='img', help="Image folder (relative to data "
+                        "folder).")
     PARSER.add_argument('-c', '--catalog', dest='CATALOG', action='store',
                         default='gz2', help="Catalog name.")
 
-    main(PARSER.parse_args())
+    ARGS = PARSER.parse_args()
+    ARGS.DATA = os.path.join(MODULE_PATH, ARGS.DATA)
+    main()
