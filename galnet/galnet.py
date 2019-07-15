@@ -51,7 +51,7 @@ def test_model(data, model, class_cols, model_path):
                                           y_col=class_cols,
                                           batchsize=BATCH_SIZE,
                                           target_size=INPUT_DIM,
-                                          class_mode='multi_output')
+                                          class_mode='other')
 
     test_step_size = testgen.n // testgen.batch_size
 
@@ -88,7 +88,7 @@ def train_model(data, class_cols, model_path):
                                            y_col=class_cols,
                                            batchsize=BATCH_SIZE,
                                            target_size=INPUT_DIM,
-                                           class_mode='multi_output',
+                                           class_mode='other',
                                            subset='training')
 
     valgen = datagen.flow_from_dataframe(data,
@@ -97,7 +97,7 @@ def train_model(data, class_cols, model_path):
                                          y_col=class_cols,
                                          batchsize=BATCH_SIZE,
                                          target_size=INPUT_DIM,
-                                         class_mode='multi_output',
+                                         class_mode='other',
                                          subset='validation')
 
     # now we actually build the model, which is defined in model.py
@@ -224,7 +224,7 @@ def main(argv):
     # choose the questions we want to classify. note that the number
     # of columns here should match the number of output layers in
     # model.py
-    class_cols = ['t01']
+    class_cols = ['t01a01', 't01a02', 't01a03']
 
     # split the data into a training set and a test set. the test set
     # will be set aside entirely until the very end
