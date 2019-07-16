@@ -27,6 +27,28 @@ EPOCHS = 100
 
 
 def test_model(data, model, class_cols, model_path):
+    """Tests models that have already been initialized and trained.
+
+    Parameters
+    ----------
+        data : :obj:`pandas.core.frame.DataFrame`
+            The data frame containing testing data formatted for use
+            with :func:`ImageDataGenerator.flow_from_dataframe`
+        model : :obj:`keras.models.Model`
+            The model to test.
+        class_cols : list of str
+            The dataframe columns containing the classes. For use with
+            multi-output models.
+        model_path : str
+            Path where model is saved. Used to store test results with
+            model.
+
+    Returns
+    -------
+    score : list of float
+        The model's test scores.
+
+    """
     testgen = ImageDataGenerator()
     testgen = testgen.flow_from_dataframe(data,
                                           directory=MODULE_PATH,
@@ -49,6 +71,27 @@ def test_model(data, model, class_cols, model_path):
 
 
 def train_model(data, class_cols, model_path):
+    """Trains a model for galactic image recognition.
+
+    Parameters
+    ----------
+        data : :obj:`pandas.core.frame.DataFrame`
+            The data frame containing training data formatted for use
+            with :func:`ImageDataGenerator.flow_from_dataframe`. Data
+            will automatically be broken into training and validaiton
+            sets.
+        class_cols : list of str
+            The dataframe columns containing the classes. For use with
+            multi-output models.
+        model_path : str
+            Path where model should be saved.
+
+    Returns
+    -------
+    model : :obj:`keras.models.Model`
+        The trained model.
+
+    """
     # create an ImageDataGenerator, which applies random affine
     # transformations to the data. such augmentation is standard
     datagen = ImageDataGenerator(rotation_range=360,
@@ -89,7 +132,6 @@ def train_model(data, class_cols, model_path):
     # set up for a multi-gpu model
     # HACK: fixes an issue in keras where these don't play nice with
     #       xla_gpus (which cause double counting of available gpus).
-    #       I plan to submit this fix on my own time later
     available_devices = [multi_gpu_utils._normalize_device_name(name)
                          for name
                          in multi_gpu_utils._get_available_devices()]
@@ -118,17 +160,33 @@ def train_model(data, class_cols, model_path):
     train_step_size = traingen.n // traingen.batch_size
     val_step_size = valgen.n // valgen.batch_size
 
-    # save the model after each epoch if it's an improvement over
-    # previous epochs
-    ckpt = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
-                           monitor='val_acc', save_best_only=True)
-    history = model.fit_generator(generator=traingen,
-                                  steps_per_epoch=train_step_size,
-                                  validation_data=valgen,
-                                  validation_steps=val_step_size,
-                                  epochs=EPOCHS,
-                                  callbacks=[ckpt],
-                                  verbose=1)
+    # set up callbacks for saving and logging
+    # XXX: will need to append history if we continue training a model
+    monitor = 'val_loss'  # should monitor the same quanitity for all
+    base_patience = 10  # ensure we try LR reduction a few times before stop
+
+    checkpoint = ModelCheckpoint(os.path.join(model_path, 'model.h5'),
+                                 monitor=monitor, save_best_only=True)
+    csv_logger = CSVLogger(os.path.join(model_path, 'training.log'))
+    lr_plateau = ReduceLROnPlateau(monitor=monitor, factor=0.1,
+                                   patience=base_patience, min_lr=0.)
+    stop = EarlyStopping(monitor=monitor, patience=5*base_patience)
+
+    # train the model
+    history = parallel_model.fit_generator(generator=traingen,
+                                           steps_per_epoch=train_step_size,
+                                           validation_data=valgen,
+                                           validation_steps=val_step_size,
+                                           epochs=EPOCHS,
+                                           callbacks=[checkpoint,
+                                                      csv_logger,
+                                                      lr_plateau,
+                                                      stop],
+                                           verbose=1)
+
+    # necessary for recoverring the original model later, instead of
+    # the parallelized model. this matters for transfer learning
+    model.save(os.path.join(model_path, 'model.h5'))
 
     # XXX: the following graphs are only computed for the current
     #      training session. This is ok until we decide to continue
@@ -188,9 +246,14 @@ def main(argv):
 
     """
     # safely create output directory for our model/statistics
-    # we could also input a unique stamp here, if we want to keep
-    # multiple separate (but overall compatible) models
-    model_path = os.path.join(argv.DATA, argv.MODEL)
+    # we also create a unique id in the process, to ensure we can tell
+    # specific configurations of models apart in other contexts by
+    # referring to their uuids. model configuration is stored as part
+    # of each model.h5 file (just load and investigate its properties)
+    if argv.TRAIN:
+        model_path = os.path.join(argv.DATA, argv.MODEL, str(uuid.uuid4()))
+    elif argv.TEST:
+        model_path = os.path.join(argv.DATA, argv.MODEL)
     if not os.path.exists(model_path):
         os.makedirs(model_path)
 

@@ -36,10 +36,10 @@ def model_builder(input_dim):
                  data_format=DATA_FORMAT, activation='relu')(cnn)
     cnn = MaxPooling2D(pool_size=(2, 2), data_format=DATA_FORMAT)(cnn)
 
-    flat = Flatten(data_format=DATA_FORMAT)(cnn)
-    flat = Dropout(.5)(flat)
+    cnn = Flatten(data_format=DATA_FORMAT)(cnn)
+    cnn = Dropout(.5)(cnn)
 
-    t01 = Dense(64, activation='relu')(flat)
+    t01 = Dense(64, activation='relu')(cnn)
     t01 = Dropout(.5)(t01)
     t01_out = Dense(3, activation='softmax', name='t01')(t01)
 
