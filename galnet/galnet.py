@@ -121,15 +121,15 @@ def train_model(data, class_cols, model_path):
     n_gpus = len([x for x in available_devices if '/gpu' in x])
 
     if n_gpus > 1:  # only use multi_gpu if we have multiple gpus
-        model = multi_gpu_model(model, gpus=n_gpus)
+        parallel_model = multi_gpu_model(model, gpus=n_gpus)
 
     # compile the model. note that the names of outputs in dicts (e.g.,
     # 't01') should match the names of the relevant output layers found
     # in the model definition
-    model.compile(optimizer=Nadam(lr=0.0001),
-                  loss={'t01': 'categorical_crossentropy'},
-                  loss_weights={'t01': 1.},
-                  metrics=['accuracy'])
+    parallel_model.compile(optimizer=Nadam(lr=0.0001),
+                           loss={'t01': 'categorical_crossentropy'},
+                           loss_weights={'t01': 1.},
+                           metrics=['accuracy'])
 
     # calculate the number of steps per epoch (or validation) such that
     # all (or nearly all) images are used
@@ -149,16 +149,20 @@ def train_model(data, class_cols, model_path):
     stop = EarlyStopping(monitor=monitor, patience=5*base_patience)
 
     # train the model
-    history = model.fit_generator(generator=traingen,
-                                  steps_per_epoch=train_step_size,
-                                  validation_data=valgen,
-                                  validation_steps=val_step_size,
-                                  epochs=EPOCHS,
-                                  callbacks=[checkpoint,
-                                             csv_logger,
-                                             lr_plateau,
-                                             stop],
-                                  verbose=1)
+    history = parallel_model.fit_generator(generator=traingen,
+                                           steps_per_epoch=train_step_size,
+                                           validation_data=valgen,
+                                           validation_steps=val_step_size,
+                                           epochs=EPOCHS,
+                                           callbacks=[checkpoint,
+                                                      csv_logger,
+                                                      lr_plateau,
+                                                      stop],
+                                           verbose=1)
+
+    # necessary for recoverring the original model, instead of the
+    # parallelized model. this matters for transfer learning
+    model.save(os.path.join(model_path, 'model.h5'))
 
     # XXX: the following graphs are only computed for the current
     #      training session. This is ok until we decide to continue
