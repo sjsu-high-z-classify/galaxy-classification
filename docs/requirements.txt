@@ -43,7 +43,7 @@ pytz==2018.4
 PyYAML==5.1
 scikit-learn==0.21.1
 scipy==1.1.0
-SciServer==2.0.13 -e git+https://github.com/sciserver/SciScript-Python.git#egg=py3
+-e git+https://github.com/sciserver/SciScript-Python.git#egg=py3
 simplegeneric==0.8.1
 six==1.11.0
 tables==3.4.3
