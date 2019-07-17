@@ -1,0 +1,7 @@
+numpy
+pandas
+keras
+keras-preprocessing>=1.1
+pillow
+tqdm
+-e git+https://github.com/jacaseyclyde/SciScript-Python.git#egg=SciServer

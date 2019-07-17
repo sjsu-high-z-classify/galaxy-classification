@@ -1,0 +1,12 @@
+name: galnet
+
+dependencies:
+  - numpy
+  - matplotlib
+  - pandas
+  - pillow
+  - tqdm
+  - keras-gpu
+  - keras-preprocessing=1.1.*
+  - pip:
+    - "-e git+https://github.com/jacaseyclyde/SciScript-Python.git#egg=SciServer"

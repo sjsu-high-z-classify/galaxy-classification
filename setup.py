@@ -140,7 +140,8 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-#    install_requires=['peppercorn'],  # Optional
+    install_requires=['numpy', 'matplotlib', 'pandas', 'pillow', 'tqdm',
+                      'SciServer', 'keras', 'keras-preprocessing>=1.1,<2'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
