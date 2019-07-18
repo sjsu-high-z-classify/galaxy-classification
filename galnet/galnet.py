@@ -189,23 +189,36 @@ def train_model(data, class_cols, model_path):
                                loss={'t01': 'categorical_crossentropy'},
                                loss_weights={'t01': 1.},
                                metrics=['accuracy'])
+
+        # train the model
+        history = parallel_model.fit_generator(generator=traingen,
+                                               steps_per_epoch=train_step_size,
+                                               validation_data=valgen,
+                                               validation_steps=val_step_size,
+                                               epochs=EPOCHS,
+                                               callbacks=[checkpoint,
+                                                          csv_logger,
+                                                          lr_plateau,
+                                                          stop],
+                                               verbose=1)
+
     else:
         model.compile(optimizer=Nadam(lr=0.0001),
                       loss={'t01': 'categorical_crossentropy'},
                       loss_weights={'t01': 1.},
                       metrics=['accuracy'])
 
-    # train the model
-    history = parallel_model.fit_generator(generator=traingen,
-                                           steps_per_epoch=train_step_size,
-                                           validation_data=valgen,
-                                           validation_steps=val_step_size,
-                                           epochs=EPOCHS,
-                                           callbacks=[checkpoint,
-                                                      csv_logger,
-                                                      lr_plateau,
-                                                      stop],
-                                           verbose=1)
+        # train the model
+        history = model.fit_generator(generator=traingen,
+                                      steps_per_epoch=train_step_size,
+                                      validation_data=valgen,
+                                      validation_steps=val_step_size,
+                                      epochs=EPOCHS,
+                                      callbacks=[checkpoint,
+                                                 csv_logger,
+                                                 lr_plateau,
+                                                 stop],
+                                      verbose=1)
 
     # necessary for recoverring the original model later, instead of
     # the parallelized model. this matters for transfer learning
