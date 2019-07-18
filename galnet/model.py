@@ -56,7 +56,10 @@ def model_builder(input_dim):
     cnn = Flatten(data_format=DATA_FORMAT)(cnn)
     cnn = Dropout(.5)(cnn)
 
-    t01 = Dense(64, activation='relu')(cnn)
+    t01 = Dense(2048, activation='relu')(cnn)
+    t01 = Dropout(.5)(t01)
+
+    t01 = Dense(64, activation='relu')(t01)
     t01 = Dropout(.5)(t01)
     t01_out = Dense(3, activation='softmax', name='t01')(t01)
 
