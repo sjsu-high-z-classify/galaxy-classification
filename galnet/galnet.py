@@ -152,27 +152,6 @@ def train_model(data, class_cols, model_path):
     plot_model(model, to_file=os.path.join(model_path, 'model.png'),
                show_shapes=True, show_layer_names=True)
 
-    # set up for a multi-gpu model
-    # HACK: fixes an issue in keras where these don't play nice with
-    #       xla_gpus (which cause double counting of available gpus).
-    available_devices = [multi_gpu_utils._normalize_device_name(name)
-                         for name
-                         in multi_gpu_utils._get_available_devices()]
-
-    # this line is our actual keras fix; it's the '/' that's key
-    n_gpus = len([x for x in available_devices if '/gpu' in x])
-
-    if n_gpus > 1:  # only use multi_gpu if we have multiple gpus
-        parallel_model = multi_gpu_model(model, gpus=n_gpus)
-
-    # compile the model. note that the names of outputs in dicts (e.g.,
-    # 't01') should match the names of the relevant output layers found
-    # in the model definition
-    parallel_model.compile(optimizer=Nadam(lr=0.0001),
-                           loss={'t01': 'categorical_crossentropy'},
-                           loss_weights={'t01': 1.},
-                           metrics=['accuracy'])
-
     # calculate the number of steps per epoch (or validation) such that
     # all (or nearly all) images are used
     train_step_size = traingen.n // traingen.batch_size
@@ -189,6 +168,32 @@ def train_model(data, class_cols, model_path):
     lr_plateau = ReduceLROnPlateau(monitor=monitor, factor=0.1,
                                    patience=base_patience, min_lr=0.)
     stop = EarlyStopping(monitor=monitor, patience=5*base_patience)
+
+    # set up for a multi-gpu model
+    # HACK: fixes an issue in keras where these don't play nice with
+    #       xla_gpus (which cause double counting of available gpus).
+    available_devices = [multi_gpu_utils._normalize_device_name(name)
+                         for name
+                         in multi_gpu_utils._get_available_devices()]
+
+    # this line is our actual keras fix; it's the '/' that's key
+    n_gpus = len([x for x in available_devices if '/gpu' in x])
+
+    if n_gpus > 1:  # only use multi_gpu if we have multiple gpus
+        parallel_model = multi_gpu_model(model, gpus=n_gpus)
+
+        # compile the model. note that the names of outputs in dicts (e.g.,
+        # 't01') should match the names of the relevant output layers found
+        # in the model definition
+        parallel_model.compile(optimizer=Nadam(lr=0.0001),
+                               loss={'t01': 'categorical_crossentropy'},
+                               loss_weights={'t01': 1.},
+                               metrics=['accuracy'])
+    else:
+        model.compile(optimizer=Nadam(lr=0.0001),
+                      loss={'t01': 'categorical_crossentropy'},
+                      loss_weights={'t01': 1.},
+                      metrics=['accuracy'])
 
     # train the model
     history = parallel_model.fit_generator(generator=traingen,
