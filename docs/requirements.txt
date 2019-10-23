@@ -3,7 +3,7 @@ keras-preprocessing==1.1.0
 matplotlib==2.2.3
 numpy==1.16.2
 pandas==0.24.1
-pillow==5.4.1
+pillow==6.2.0
 pydot==1.4.1
 pytables==3.5.2
 requests==2.20.1
