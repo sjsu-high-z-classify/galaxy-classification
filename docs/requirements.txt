@@ -8,7 +8,7 @@ pydot==1.4.1
 pytables==3.5.2
 requests==2.20.1
 scikit-learn==0.20.0
-tensorflow==1.13.1
+tensorflow==1.15.4
 tornado==4.5.2
 tqdm==4.32.1
 -e git+https://github.com/jacaseyclyde/SciScript-Python.git#egg=SciServer
